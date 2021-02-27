@@ -145,6 +145,7 @@ func Init(appId string, mchId string, secretKey string, apiClientKey string, api
 		serialNo:     serialNo,
 		notifyUrl:    notifyUrl,
 	}, nil
+
 }
 
 func (p *PayC) App() *app {
