@@ -1,0 +1,57 @@
+#orm配置
+sql :
+  #数据库类型
+  type : 'mysql'
+  #连接地址
+  host : '112.74.127.127'
+  #连接端口
+  port : '3306'
+  #连接库名
+  database : 'adminapi_ycwl666'
+  #用户名
+  username : 'adminapi_ycwl666'
+  #密码
+  password : 'ycwlF101'
+
+#框架配置
+dragonnews :
+  #请求解析
+  request :
+    #是否开启加密
+    enable : true
+    #开启后的解密方式,支持AES和RSA
+    secretMode : 'AES'
+    #公钥,AES只需填写16位公钥即可
+    public : '1234567890123456'
+    #私钥
+    private : ''
+
+  #响应头
+  response:
+    #错误通知,开启后会可替换指定位置的文本内容为错误信息
+    errorNotice: true
+    #默认响应类型,对错误响应无效,支持html,xml,json
+    returnType: 'json'
+    #当路由解析不到地址或出现错误时的浏览器状态码
+    statusCode: 500
+    #返回信息,可以使用替换标识[errorMsg]对文本替换报错内容
+    errorData: '{"code":"50000","message":"[errorMsg]","data":{}}'
+
+  cache:
+    #连接类型
+    type: "tcp"
+    #连接地址
+    host: "r-wz96443d467286f4pd.redis.rds.aliyuncs.com:6379"
+    #用户名
+    username: "ycwl_redis"
+    #密码
+    password: "ycwlF101"
+
+
+
+  #服务启动
+  server :
+    #监听地址
+    host : '0.0.0.0'
+    #监听端口
+    port : '8080'
