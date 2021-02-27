@@ -5,6 +5,23 @@ import (
 	"time"
 )
 
+//const (
+//	Y  = "2006"
+//	y  = "06"
+//	M  = "01"
+//	m  = "1"
+//	D  = "02"
+//	d  = "2"
+//	H  = "15"
+//	HH = ""
+//	h  = "3"
+//	hh = "03"
+//	I  = "04"
+//	i  = "4"
+//	S  = "05"
+//	s  = "5"
+//)
+
 type date struct {
 	d time.Time
 }
@@ -50,7 +67,7 @@ func Date() date {
 
 func DateTime() string {
 	d := time.Now()
-	return d.Format("2006-01-02 15:04:05 ")
+	return d.Format("2006-01-02 15:04:05")
 }
 
 //types为输出格式,填入s为秒级时间戳,ms毫秒,ns纳秒

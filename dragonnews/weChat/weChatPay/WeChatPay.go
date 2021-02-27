@@ -46,6 +46,50 @@ type CertList struct {
 	Data []CertListData `json:"data"`
 }
 
+//订单金额
+type Amount struct {
+	Total    int    `json:"total"`
+	Currency string `json:"currency"`
+	Refund   string `json:"refund,omitempty"`
+}
+
+//商户门店信息
+type StoreInfo struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	AeraName string `json:"aera_name"`
+	Address  string `json:"address"`
+}
+
+//优惠功能
+type Detail struct {
+	CostPrice   string               `json:"cost_price,omitempty"`
+	InvoiceId   string               `json:"invoice_id,omitempty"`
+	GoodsDetail *map[int]GoodsDetail `json:"goods_detail,omitempty"`
+}
+
+//单品列表
+type GoodsDetail struct {
+	MerchantGoodsId  string `json:"merchant_goods_id,omitempty"`
+	WechatpayGoodsId string `json:"wechatpay_goods_id,omitempty"`
+	GoodsName        string `json:"goods_name,omitempty"`
+	Quantity         string `json:"quantity,omitempty"`
+	UnitPrice        string `json:"unit_price,omitempty"`
+	RefundAmount     string `json:"refund_amount"`
+	RefundQuantity   string `json:"refund_quantity"`
+}
+
+//场景信息
+type Secene struct {
+	PayerClientIp string    `json:"payer_client_ip"`
+	DeviceId      string    `json:"device_id"`
+	StoreInfo     StoreInfo `json:"store_info"`
+}
+
+type SettleInfo struct {
+	ProfitSharing bool
+}
+
 type CertListData struct {
 	SerialNo           string            `json:"serial_no"`
 	EffectiveTime      string            `json:"effective_time"`
@@ -104,7 +148,15 @@ func Init(appId string, mchId string, secretKey string, apiClientKey string, api
 }
 
 func (p *PayC) App() *app {
-	return &app{p: p}
+	return &app{p: p, generals: &generals{p: p}}
+}
+
+func (p *PayC) H5() *h5 {
+	return &h5{p: p, generals: &generals{p: p}}
+}
+
+func (p *PayC) Js() *js {
+	return &js{p: p, generals: &generals{p: p}}
 }
 
 //生成验证请求头内容,可用于第三方工具调用验证是否有误
