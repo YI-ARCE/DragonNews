@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	Yaml "yiarce/dragonnews/config/driver"
-	"yiarce/dragonnews/log"
 	"yiarce/dragonnews/reply"
 	"yiarce/dragonnews/route"
 )
@@ -18,8 +17,8 @@ func Start(server Yaml.DragonNews) {
 	config = server.Response
 	http.HandleFunc("/", request)
 	fmt.Print("----DragonNews----\n")
-	fmt.Print("-----Start OK-----\n")
-	fmt.Print("-----Http  OK-----\n")
+	fmt.Print("----Start   OK----\n")
+	fmt.Print("----Http    OK----\n")
 	fmt.Print("----Listening-----\n")
 	fmt.Print("----Port " + server.Server.Port + "-----\n")
 	_ = http.ListenAndServe(server.Server.Host+":"+server.Server.Port, nil)
@@ -77,7 +76,7 @@ func request(w http.ResponseWriter, r *http.Request) {
 			Reply.Return(config.StatusCode, msg)
 		}
 		if Reply.Log.Judge() {
-			err := log.Out(Reply.Log)
+			err := Reply.Log.Out()
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -85,7 +84,7 @@ func request(w http.ResponseWriter, r *http.Request) {
 	}()
 	if function, ok := route.Route[Request.String()]; ok {
 		function(&Reply)
-	} else if function, ok := route.Route[Uri]; ok {
+	} else if function, ok = route.Route[Uri]; ok {
 		function(&Reply)
 	} else {
 		w.WriteHeader(config.StatusCode)

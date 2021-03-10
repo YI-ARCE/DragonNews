@@ -26,6 +26,5 @@ func Get(name string) (map[string]string, error) {
 	File := Yaml.File{
 		conf,
 	}
-
 	return File.Get()
 }

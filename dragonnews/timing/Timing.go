@@ -20,6 +20,8 @@ type TimerFunc struct {
 	Timers time.Duration
 	//当前定时器的工作状态
 	Status bool
+	//日志输出
+	Log log.Log
 }
 
 var pools = Pool{
@@ -42,6 +44,7 @@ func Create(name string, f func() bool, times time.Duration) (*TimerFunc, error)
 		Func:   f,
 		Timers: times,
 		Status: true,
+		Log:    log.Init("none", "Timing", "none", "none"),
 	}
 	return pools.pool[name], nil
 }
@@ -78,7 +81,7 @@ func (tf *TimerFunc) Start() {
 					l.Insert(msg)
 				}
 				fmt.Println(msg)
-				log.Out(l)
+				l.Out()
 				tf.Status = false
 			}
 			t.Stop()

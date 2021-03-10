@@ -52,10 +52,10 @@ func (l *Log) Judge() bool {
 	return false
 }
 
-func Out(l Log) error {
+func (l *Log) Out() error {
 	var path, _ = os.Getwd()
 	d := general.Date()
-	path += "\\log\\" + d.Custom("YM") + "\\"
+	path += "/log/" + d.Custom("YM") + "/"
 	err := os.MkdirAll(path, 0755)
 	if err != nil {
 		fmt.Println(err)

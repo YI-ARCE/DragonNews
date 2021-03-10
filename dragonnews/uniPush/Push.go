@@ -16,7 +16,7 @@ type Uni struct {
 	AppKey       string
 	AppSecret    string
 	Token        string
-	EndTimeStamp string
+	EndTimestamp string
 }
 
 //详情参考 https://docs.getui.com/getui/server/rest_v2/push/
@@ -79,7 +79,7 @@ func Init(appId string, appKey string, appSecret string) (*Uni, error) {
 		AppKey:       appKey,
 		AppSecret:    appSecret,
 		Token:        (replys.Data["data"].(map[string]interface{}))["token"].(string),
-		EndTimeStamp: (replys.Data["data"].(map[string]interface{}))["expire_time"].(string),
+		EndTimestamp: (replys.Data["data"].(map[string]interface{}))["expire_time"].(string),
 	}, nil
 }
 
