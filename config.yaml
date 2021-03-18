@@ -41,11 +41,11 @@ dragonnews :
     #连接类型
     type: "tcp"
     #连接地址
-    host: "r-wz96443d467286f4pd.redis.rds.aliyuncs.com:6379"
+    host: "xxxxxxxxx"
     #用户名
-    username: "ycwl_redis"
+    username: "xxxx"
     #密码
-    password: "ycwlF101"
+    password: "xxxxx"
 
 
 
