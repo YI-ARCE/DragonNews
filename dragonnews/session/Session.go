@@ -44,7 +44,7 @@ func init() {
 
 func (h *Http) Get(key string) (interface{}, bool) {
 	cookie, err := h.R.Cookie("dragon-cookie")
-	if err != nil || cookie.Value == "" {
+	if err != nil || cookie.Value == "" || manager.Session[cookie.Value].Data[key] == nil {
 		return nil, false
 	}
 	return manager.Session[cookie.Value].Data[key], true

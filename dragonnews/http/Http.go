@@ -53,11 +53,9 @@ func request(w http.ResponseWriter, r *http.Request) {
 	Request.WriteString("_")
 	Request.WriteString(r.Method)
 	w.Header().Set("Content-type", returnType)
-	Reply := reply.Start(w, r)
+	R := reply.Start(w, r)
 	defer func() {
 		if r := recover(); r != nil {
-			//*\t"+r+"\n
-			fmt.Println(r)
 			msg := "Positioning error:\n"
 			for i := 1; i <= 5; i++ {
 				_, file, line, _ := runtime.Caller(i)
@@ -66,28 +64,29 @@ func request(w http.ResponseWriter, r *http.Request) {
 					msg += "\n"
 				}
 			}
-			Reply.Log.Insert(msg)
+			R.Log.Insert(msg)
+			rtStr := config.ErrorData
 			if config.ErrorNotice {
 				str, flag := r.(string)
 				if flag {
-					msg = strings.ReplaceAll(config.ErrorData, "[errorMsg]", str)
+					rtStr = strings.ReplaceAll(config.ErrorData, "[%errorMsg%]", str)
 				}
 			}
-			Reply.Return(config.StatusCode, msg)
+			R.Rs(config.StatusCode, rtStr)
 		}
-		if Reply.Log.Judge() {
-			err := Reply.Log.Out()
+		if R.Log.Judge() {
+			err := R.Log.Out()
 			if err != nil {
 				fmt.Println(err.Error())
 			}
 		}
 	}()
 	if function, ok := route.Route[Request.String()]; ok {
-		function(&Reply)
+		function(&R)
 	} else if function, ok = route.Route[Uri]; ok {
-		function(&Reply)
+		function(&R)
 	} else {
 		w.WriteHeader(config.StatusCode)
-		_, _ = w.Write([]byte(`Nonexistent address`))
+		_, _ = w.Write([]byte(strings.ReplaceAll(config.ErrorData, "[%errorMsg%]", "Nonexistent address")))
 	}
 }

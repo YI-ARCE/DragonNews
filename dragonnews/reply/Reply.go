@@ -12,12 +12,12 @@ import (
 	"yiarce/dragonnews/session"
 )
 
-type ContentType struct {
-	Xml  string
-	Json string
-	Html string
-	Text string
-}
+const (
+	Xml  = "application/xml; charset=utf-8"
+	Json = "application/json; charset=utf-8"
+	Html = "text/html; charset=utf-8"
+	Text = "text/plain; charset=utf-8"
+)
 
 type Request struct {
 	//请求的server域名
@@ -46,13 +46,19 @@ type Request struct {
 	Other interface{}
 }
 
+type rs struct {
+	Code        int
+	Data        interface{}
+	ContentType string
+}
+
 type Reply struct {
 	Request Request
 	W       http.ResponseWriter
 	R       *http.Request
-	Ct      ContentType
 	Session session.Http
 	Log     log.Log
+	rs      rs
 }
 
 //type reply interface {
@@ -127,15 +133,10 @@ func Start(w http.ResponseWriter, r *http.Request) Reply {
 		Request: Req,
 		W:       w,
 		R:       r,
-		Ct: ContentType{
-			Xml:  "application/xml; charset=utf-8",
-			Json: "application/json; charset=utf-8",
-			Html: "text/html; charset=utf-8",
-			Text: "text/plain; charset=utf-8",
-		},
 		Session: session.Http{
 			W: &w, R: r,
 		},
+		rs:  rs{},
 		Log: log.Log{Host: Req.Host, Method: Req.Method, Uri: Req.Uri, IP: Req.IP},
 	}
 }
@@ -153,40 +154,41 @@ func getFile(handler *multipart.FileHeader) []byte {
 }
 
 //设置响应头
-func (reply Reply) SetHeader(key string, value string) {
+func (reply *Reply) SetHeader(key string, value string) {
 	reply.W.Header().Set(key, value)
 }
 
-//返回数据,参数三为返回的格式,可以不填,默认为识别的对应内容
-func (reply Reply) Return(status int, data interface{}, tag ...string) {
+//提交响应
+func (r *Reply) Rs(code int, data interface{}, types ...string) {
 	var bytes []byte
-	switch reflect.TypeOf(data).Kind() {
-	case reflect.String:
-		bytes = []byte(data.(string))
-		reply.W.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	case reflect.Slice:
-		bytes = data.([]byte)
-		reply.W.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	case reflect.Array, reflect.Map, reflect.Struct:
-		var err error
-		bytes, err = json.Marshal(data)
-		if err != nil {
-			fmt.Print(err)
+	if len(types) > 0 {
+		r.W.Header().Set("Content-Type", types[0])
+	} else {
+		switch reflect.TypeOf(data).Kind() {
+		case reflect.String:
+			bytes = []byte(data.(string))
+			r.W.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		case reflect.Slice:
+			bytes = r.rs.Data.([]byte)
+			r.W.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		case reflect.Array, reflect.Map, reflect.Struct:
+			var err error
+			bytes, err = json.Marshal(data)
+			if err != nil {
+				fmt.Print(err)
+			}
+			r.W.Header().Set("Content-Type", "application/json; charset=utf-8")
+		default:
+			var err error
+			bytes, err = json.Marshal(data)
+			if err != nil {
+				fmt.Print(err)
+			}
+			r.W.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		}
-		reply.W.Header().Set("Content-Type", "application/json; charset=utf-8")
-	default:
-		var err error
-		bytes, err = json.Marshal(data)
-		if err != nil {
-			fmt.Print(err)
-		}
-		reply.W.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	}
-	for _, value := range tag {
-		reply.W.Header().Set("Content-Type", value)
-	}
-	reply.W.WriteHeader(status)
-	_, err := reply.W.Write(bytes)
+	r.W.WriteHeader(code)
+	_, err := r.W.Write(bytes)
 	if err != nil {
 		panic(err)
 	}
