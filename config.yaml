@@ -34,18 +34,18 @@ dragonnews :
     returnType: 'json'
     #当路由解析不到地址或出现错误时的浏览器状态码
     statusCode: 500
-    #返回信息,可以使用替换标识[errorMsg]对文本替换报错内容
-    errorData: '{"code":"50000","message":"[errorMsg]","data":{}}'
+    #返回信息,可以使用替换标识[%errorMsg%]对文本替换报错内容
+    errorData: '{"code":"50000","message":"[%errorMsg%]","data":{}}'
 
   cache:
     #连接类型
     type: "tcp"
     #连接地址
-    host: "r-wz96443d467286f4pd.redis.rds.aliyuncs.com:6379"
+    host: "xxxxxxx"
     #用户名
-    username: "ycwl_redis"
+    username: "xxxxxx"
     #密码
-    password: "ycwlF101"
+    password: "xxxxxx"
 
 
 
