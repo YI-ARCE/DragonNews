@@ -3,15 +3,15 @@ sql :
   #数据库类型
   type : 'mysql'
   #连接地址
-  host : '112.74.127.127'
+  host : '127.0.0.1'
   #连接端口
   port : '3306'
   #连接库名
-  database : 'adminapi_ycwl666'
+  database : 'dragon'
   #用户名
-  username : 'adminapi_ycwl666'
+  username : 'dragon'
   #密码
-  password : 'ycwlF101'
+  password : 'yiarce'
 
 #框架配置
 dragonnews :
