@@ -6,5 +6,5 @@ import (
 )
 
 func Route() {
-	route.Post("/index", Index.Index)
+	route.Get("/index", Index.Index)
 }

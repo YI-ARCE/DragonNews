@@ -38,10 +38,6 @@ type query struct {
 	bx     *sql.Tx
 }
 
-type QInsert struct {
-	lastId int
-}
-
 func Init(SqlConfig Sql) {
 	var DbLink strings.Builder
 	DbLink.WriteString(SqlConfig.Username)
@@ -68,7 +64,7 @@ func Init(SqlConfig Sql) {
 }
 
 //自定义查询,若查询的结果只返回一个则索引[0]即可
-func Query(sql string) []map[string]string {
+func Query(sql string) map[int]map[string]string {
 	return checkSql(sql)
 }
 
@@ -159,7 +155,7 @@ func (query *query) Field(field string) *query {
 		str = strings.Split(field, ",")
 		count := len(str)
 		for key, val := range str {
-			if strings.Contains(field, " ") || strings.Contains(val, "(") || strings.Contains(val, ")") {
+			if strings.Contains(val, "(") || strings.Contains(val, ")") {
 				builder.WriteString(val)
 			} else if strings.Contains(val, ".") {
 				column := strings.Split(val, ".")
@@ -178,9 +174,7 @@ func (query *query) Field(field string) *query {
 			}
 		}
 	} else {
-		if strings.Contains(field, " ") || strings.Contains(field, "(") || strings.Contains(field, ")") {
-			builder.WriteString(field)
-		} else if strings.Contains(field, ".") {
+		if strings.Contains(field, ".") {
 			column := strings.Split(field, ".")
 			builder.WriteString("`")
 			builder.WriteString(column[0])
@@ -262,25 +256,21 @@ func (query *query) Page(page int, number int) *query {
 //查询单个结果
 func (query *query) Find() (map[string]string, string) {
 	query.types = "check"
-	query.limit = "1"
-	sqlQuery := query.createQuery()
+	sqlQuery := query.createQuery("LIMIT 1")
 	if query.sql {
 		return map[string]string{}, sqlQuery
 	}
 	result := checkSql(sqlQuery, query.bx)
-	if len(result) > 0 {
-		return result[0], ""
-	}
-	return nil, ""
+	return result[0], ""
 
 }
 
 //查询结果集
-func (query *query) Select() ([]map[string]string, string) {
+func (query *query) Select() (map[int]map[string]string, string) {
 	query.types = "check"
-	sqlQuery := query.createQuery()
+	sqlQuery := query.createQuery("")
 	if query.sql {
-		return nil, sqlQuery
+		return map[int]map[string]string{}, sqlQuery
 	}
 	result := checkSql(sqlQuery, query.bx)
 	return result, ""
@@ -289,7 +279,7 @@ func (query *query) Select() ([]map[string]string, string) {
 func (query *query) Update(data map[string]string) (int, string) {
 	query.types = "update"
 	query.data = data
-	sqlQuery := query.createQuery()
+	sqlQuery := query.createQuery("")
 	if query.sql {
 		return 0, sqlQuery
 	}
@@ -297,40 +287,24 @@ func (query *query) Update(data map[string]string) (int, string) {
 	return num, ""
 }
 
-func (query *query) Insert(data map[string]string) (*QInsert, string) {
+func (query *query) Insert(data map[string]string) (bool, string) {
 	query.types = "insert"
 	query.data = data
-	sqlQuery := query.createQuery()
+	sqlQuery := query.createQuery("")
 	if query.sql {
-		return nil, sqlQuery
+		return false, sqlQuery
 	}
-	flag, _, lastId := executeSql(sqlQuery, query.bx)
-	if flag {
-		return &QInsert{lastId}, ""
-	}
-	return nil, ""
+	flag, _, _ := executeSql(sqlQuery, query.bx)
+	return flag, ""
 }
 
-//生成SQL
-func (query *query) BuildSql() string {
-	query.types = "check"
-	var builder strings.Builder
-	builder.WriteString("(")
-	builder.WriteString(query.createQuery())
-	builder.WriteString(")")
-	return builder.String()
-}
-
-func (i *QInsert) GetLastId() int {
-	if i == nil {
-		return 0
-	}
-	return i.lastId
+func (query *query) GetLastId() int {
+	return query.lastId
 }
 
 func (query *query) Delete() (int, string) {
 	query.types = "delete"
-	sqlQuery := query.createQuery()
+	sqlQuery := query.createQuery("")
 	if query.sql {
 		return 0, sqlQuery
 	}
@@ -345,7 +319,8 @@ func (query *query) Fet() *query {
 }
 
 //生成SQL语句
-func (query *query) createQuery() string {
+func (query *query) createQuery(limits string) string {
+	//"SELECT * FROM `crm_member` INNER JOIN `bbb` `b` ON `b`.`ba`=`c`.`ca` WHERE ( status != 5 ) GROUP BY `status` ORDER BY `bbb` DESC LIMIT 1"
 	var builder strings.Builder
 	switch query.types {
 	case "check":
@@ -463,19 +438,24 @@ func (query *query) createQuery() string {
 		builder.WriteString(query.order)
 	}
 	builder.WriteString(" ")
-	if query.page != "" {
-		builder.WriteString("LIMIT ")
-		builder.WriteString(query.page)
-	} else if query.limit != "" {
-		builder.WriteString("LIMIT ")
-		builder.WriteString(query.limit)
+	if limits != "" {
+		builder.WriteString(limits)
+	} else {
+		if query.page != "" {
+			builder.WriteString("LIMIT ")
+			builder.WriteString(query.page)
+		} else if query.limit != "" {
+			builder.WriteString("LIMIT ")
+			builder.WriteString(query.limit)
+		}
 	}
+
 	return builder.String()
 }
 
 //查询SQL并返回结果
-func checkSql(query string, bx ...*sql.Tx) []map[string]string {
-	result := []map[string]string{}
+func checkSql(query string, bx ...*sql.Tx) map[int]map[string]string {
+	result := make(map[int]map[string]string)
 	var Row *sql.Rows
 	var err error
 	if len(bx) > 0 && bx[0] != nil {
@@ -484,7 +464,7 @@ func checkSql(query string, bx ...*sql.Tx) []map[string]string {
 		Row, err = Conn.Query(query)
 	}
 	if err != nil {
-		panic(err.Error())
+		return map[int]map[string]string{}
 	}
 	column, _ := Row.Columns()
 	values := make([]sql.RawBytes, len(column))
@@ -492,6 +472,7 @@ func checkSql(query string, bx ...*sql.Tx) []map[string]string {
 	for i := range values {
 		scanArgs[i] = &values[i]
 	}
+	num := 0
 	for Row.Next() {
 		_ = Row.Scan(scanArgs...)
 		rowMap := make(map[string]string)
@@ -502,7 +483,8 @@ func checkSql(query string, bx ...*sql.Tx) []map[string]string {
 				rowMap[column[i]] = value
 			}
 		}
-		result = append(result, rowMap)
+		result[num] = rowMap
+		num++
 	}
 	return result
 }
@@ -517,15 +499,15 @@ func executeSql(query string, bx ...*sql.Tx) (bool, int, int) {
 	}
 	flag := true
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 	rowNum, err := result.RowsAffected()
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 	lastId, err := result.LastInsertId()
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 	if rowNum <= 0 {
 		flag = false

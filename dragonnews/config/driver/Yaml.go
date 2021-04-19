@@ -3,6 +3,7 @@ package driver
 import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
 	"os"
 )
 
@@ -49,17 +50,19 @@ type File struct {
 	File []byte
 }
 
-//获取参数配置文件
+/*
+	获取参数配置文件
+*/
 func GetConfig() *config {
 	var Path, _ = os.Getwd()
 	c := config{}
 	conf, err := ioutil.ReadFile(Path + "/config.yaml")
 	if err != nil {
-		panic("yamlFile.Get err   #" + err.Error())
+		log.Printf("yamlFile.Get err   #%v ", err)
 	}
 	err = yaml.Unmarshal(conf, &c)
 	if err != nil {
-		panic("yamlFile.Get err   #" + err.Error())
+		log.Printf("yamlFile.Get err   #%v ", err)
 	}
 	return &c
 }

@@ -64,30 +64,25 @@ func (tf *TimerFunc) Start() {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				msg := ``
-				errMsg := ``
-				if errStr, ok := r.(string); ok {
-					msg = `TimingError:` + errStr + "\n *  Positioning:\n"
-					errMsg = errStr
-				} else {
-					errMsg = `TimingError: The error message cannot be printed`
-					msg = errMsg + "\n *  Positioning:\n"
+				fmt.Printf("error: %s\n", r)
+				l := log.Log{
+					Host:   "Func",
+					Method: "Timing",
+					Uri:    "none",
+					IP:     "none",
 				}
+				msg := "Positioning error:\n"
 				for i := 1; i <= 5; i++ {
 					_, file, line, _ := runtime.Caller(i)
 					msg += " *\t" + file + "(Line:" + strconv.Itoa(line) + ")"
 					if i != 5 {
 						msg += "\n"
 					}
+					l.Insert(msg)
 				}
-				tf.Log.Insert(msg)
+				fmt.Println(msg)
+				l.Out()
 				tf.Status = false
-			}
-			if tf.Log.Judge() {
-				err := tf.Log.Out()
-				if err != nil {
-					fmt.Println(err.Error())
-				}
 			}
 			t.Stop()
 		}()
