@@ -55,8 +55,16 @@ func request(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", returnType)
 	R := reply.Start(w, r)
 	defer func() {
-		if r := recover(); r != nil {
-			msg := "Positioning error:\n"
+		if rec := recover(); rec != nil {
+			msg := ``
+			errMsg := ``
+			if errStr, ok := rec.(string); ok {
+				msg = `ErrorMsg:` + errStr + "\n *  Positioning:\n"
+				errMsg = errStr
+			} else {
+				errMsg = `ErrorMsg: The error message cannot be printed`
+				msg = errMsg + "\n *  Positioning:\n"
+			}
 			for i := 1; i <= 5; i++ {
 				_, file, line, _ := runtime.Caller(i)
 				msg += " *\t" + file + "(Line:" + strconv.Itoa(line) + ")"
@@ -67,10 +75,7 @@ func request(w http.ResponseWriter, r *http.Request) {
 			R.Log.Insert(msg)
 			rtStr := config.ErrorData
 			if config.ErrorNotice {
-				str, flag := r.(string)
-				if flag {
-					rtStr = strings.ReplaceAll(config.ErrorData, "[%errorMsg%]", str)
-				}
+				rtStr = strings.ReplaceAll(config.ErrorData, "[%errorMsg%]", errMsg)
 			}
 			R.Rs(config.StatusCode, rtStr)
 		}

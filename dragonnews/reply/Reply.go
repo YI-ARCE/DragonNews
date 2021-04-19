@@ -67,9 +67,9 @@ type Reply struct {
 //}
 
 func Start(w http.ResponseWriter, r *http.Request) Reply {
-	body, _ := ioutil.ReadAll(r.Body)
+	body := r.Body
 	Req := Request{}
-	Req.BodyByte = body
+	Req.BodyByte, _ = ioutil.ReadAll(body)
 	Req.Header = r.Header
 	headerContentType := r.Header["Content-Type"]
 	Req.Get = make(map[string]string)
@@ -101,25 +101,25 @@ func Start(w http.ResponseWriter, r *http.Request) Reply {
 			}
 			break
 		case "application/json":
-			err := json.Unmarshal(body, &Req.Body)
+			err := json.Unmarshal(Req.BodyByte, &Req.Body)
 			if err != nil {
 				Req.Body = nil
 			}
 			break
 		case "text/plain":
-			result := string(body[:])
+			result := string(Req.BodyByte[:])
 			Req.Input = result
 			break
 		case "text/html":
-			result := string(body[:])
+			result := string(Req.BodyByte[:])
 			Req.Input = result
 			break
 		case "application/xml":
-			result := string(body[:])
+			result := string(Req.BodyByte[:])
 			Req.Input = result
 			break
 		case "application/octet-stream":
-			Req.Other = body
+			Req.Other = Req.BodyByte
 			break
 		default:
 			break
