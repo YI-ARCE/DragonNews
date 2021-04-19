@@ -3,15 +3,15 @@ sql :
   #数据库类型
   type : 'mysql'
   #连接地址
-  host : '112.74.127.127'
+  host : '127.0.0.1'
   #连接端口
   port : '3306'
   #连接库名
-  database : 'adminapi_ycwl666'
+  database : 'dragon'
   #用户名
-  username : 'adminapi_ycwl666'
+  username : 'dragon'
   #密码
-  password : 'ycwlF101'
+  password : 'yiarce'
 
 #框架配置
 dragonnews :
@@ -34,18 +34,18 @@ dragonnews :
     returnType: 'json'
     #当路由解析不到地址或出现错误时的浏览器状态码
     statusCode: 500
-    #返回信息,可以使用替换标识[%errorMsg%]对文本替换报错内容
-    errorData: '{"code":"50000","message":"[%errorMsg%]","data":{}}'
+    #返回信息,可以使用替换标识[errorMsg]对文本替换报错内容
+    errorData: '{"code":"50000","message":"[errorMsg]","data":{}}'
 
   cache:
     #连接类型
     type: "tcp"
     #连接地址
-    host: "xxxxxxx"
+    host: "xxxxxxxxx"
     #用户名
-    username: "xxxxxx"
+    username: "xxxx"
     #密码
-    password: "xxxxxx"
+    password: "xxxxx"
 
 
 
