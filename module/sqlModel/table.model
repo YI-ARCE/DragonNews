@@ -1,0 +1,29 @@
+package [dn:packageName]
+
+import (
+	"[dn:rootDir]/table"
+)
+
+const Alias = alias(`[dn:alias]`)
+
+const AliasName = `[dn:alias]`
+
+const Table = `[dn:tableName]`
+
+const TableAlias = string(Table + " `" + Alias + "`")
+
+[dn:constKey]
+
+type alias string
+
+[dn:Struct]
+
+func (a alias) Keys(s ...string) string {
+	return table.String((*string)(&a), &s)
+}
+
+func AliasKeys(alias string, s ...string) string {
+	return table.String(&alias, &s)
+}
+
+[dn:aliasKey]

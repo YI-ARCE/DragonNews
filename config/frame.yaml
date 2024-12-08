@@ -1,0 +1,28 @@
+# 请求配置
+request :
+  #是否开启加密
+  enable : false
+  #开启后的解密方式,支持AES和RSA
+  secretMode : 'AES'
+  #公钥,AES只需填写16位公钥即可
+  public : '1234567890123456'
+  #私钥
+  private : ''
+
+# 响应
+response:
+  # 错误通知,开启后会可替换指定位置的文本内容为错误信息
+  errorNotice: true
+  # 默认响应类型
+  returnType: 'json'
+  # 当路由解析不到地址或出现错误时的浏览器状态码
+  statusCode: 500
+  # 返回信息,可以使用替换标识[errorMsg]对文本替换报错内容
+  errorData: '{"code":"50000","message":"[errorMsg]","data":{}}'
+
+# 服务启动
+server :
+  # 监听地址
+  host : '0.0.0.0'
+  # 监听端口
+  port : '8080'

@@ -23,4 +23,8 @@
     * 增加unipushSDK,目前测试可正常使用
     * 增加配置获取,仅支持yaml,并将框架配置文件移至根目录
     * 增加curl模块
+
+* 2.0
+  * 沉淀之后的完全更新,抛弃纯TP思路,在基础上增加go的特性思想
+  * readme更新更新参考[README.md](https://github.com/YI-ARCE/DragonNews/blob/main/README.md)
   
