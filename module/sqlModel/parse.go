@@ -55,7 +55,7 @@ func structure(name string, i int) {
 		fmt.Println(err.Error())
 		return
 	}
-
+	//aStr := `// alias 别名引用` + "\n" + `type alias struct{` + "\n"
 	fStr := `// Structure ` + remark + "\n" + `type Structure struct{` + "\n"
 	alias := ToAlias(name) + strconv.Itoa(i)
 	constK := ``
@@ -68,10 +68,12 @@ func structure(name string, i int) {
 		tkType, _ := checkType(m[`Type`])
 		tk.types = tkType
 		tk.remark = m[`Comment`]
-		fStr += `	` + `// ` + tk.remark + "\n" + `	` + NameToUp(tk.name) + ` ` + tk.types + " `json:\"" + tk.name + `,omitempty"` + "`" + "\n"
+		fStr += `	` + `// ` + tk.remark + "\n" + `	` + NameToUp(tk.name) + ` *` + tk.types + " `json:\"" + tk.name + `,omitempty"` + "`" + "\n"
+		//aStr += `   ` + NameToUp(tk.name) + ` string` + "\n"
 		constK += `const ` + NameToUp(tk.name) + ` = ` + "`" + tk.name + "`" + ` // ` + tk.remark + "\n\n"
-		aliasK += "// " + NameToUp(tk.name) + ` ` + tk.remark + "\n" + `func (a alias) ` + NameToUp(tk.name) + `() string {` + "\n	return *(*string)(&a) + " + NameToUp(tk.name) + "\n}\n\n"
+		aliasK += "// " + NameToUp(tk.name) + ` ` + tk.remark + "\n" + `func (a alias) ` + NameToUp(tk.name) + `() string {` + " return a.Keys(" + NameToUp(tk.name) + ") }\n"
 	}
+	//aStr += `}`
 	fStr += `}`
 	nStr := strings.ReplaceAll(model, `[dn:packageName]`, NameToUp(name, 1))
 	nStr = strings.ReplaceAll(nStr, `[dn:rootDir]`, rootDir)
@@ -79,17 +81,24 @@ func structure(name string, i int) {
 	nStr = strings.ReplaceAll(nStr, `[dn:tableName]`, name)
 	nStr = strings.ReplaceAll(nStr, `[dn:constKey]`, constK[:len(constK)-2])
 	nStr = strings.ReplaceAll(nStr, `[dn:Struct]`, fStr)
-	nStr = strings.ReplaceAll(nStr, `[dn:aliasKey]`, aliasK[:len(aliasK)-2])
+	//nStr = strings.ReplaceAll(nStr, `[dn:aliasType]`, aStr)
+	nStr = strings.ReplaceAll(nStr, `[dn:aliasKey]`, aliasK[:len(aliasK)])
 	file.Set(`table/`+NameToUp(name, 1), `table.go`, *(*[]byte)(unsafe.Pointer(&nStr)), os.O_CREATE|os.O_TRUNC, 0777)
 }
 
 func checkType(t string) (string, string) {
 	ts := strings.Split(t, `(`)
-	ts[1] = ts[1][:len(ts[1])-1]
+	if len(ts) > 1 {
+		ts[1] = ts[1][:len(ts[1])-1]
+	} else {
+		ts = append(ts, ``)
+	}
 	types := ``
 	switch ts[0] {
 	case `int`, `tinyint`:
 		types = `int`
+	case `bigint`:
+		types = `int64`
 	case `char`, `varchar`, `text`:
 		types = `string`
 	case `decimal`:

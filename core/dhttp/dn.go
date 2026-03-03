@@ -153,10 +153,9 @@ func (d *Dn) Json(data interface{}, code ...int) error {
 func (d *Dn) SuccessJson(data interface{}) error {
 	// 构建成功响应格式
 	successResp := map[string]interface{}{
-		"code":    200,
-		"msg":     "操作成功",
-		"success": true,
-		"data":    data,
+		"code": 1,
+		"msg":  "操作成功",
+		"data": data,
 	}
 	return d.Json(successResp, 200)
 }

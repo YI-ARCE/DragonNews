@@ -157,7 +157,7 @@ func Error(err frame.Error) {
 	default:
 		var e []interface{}
 		if len(err.FrameCourse) > 0 {
-			e = append(e, err.FrameCourse[0]+` ->`, err.Error()+"\n -")
+			e = append(e, err.Course[0]+` ->`, err.Error()+"\n -")
 		}
 		if len(err.ApiCourse) > 0 {
 			e = append(e, err.ApiCourse[0])

@@ -100,6 +100,7 @@ func (m Model) Count() yorm.CountResult {
 	}
 	res := Count{}
 	parseResponseData(r, &res)
+	r.Close()
 	c.num = res.Count
 	return c
 }
@@ -156,6 +157,7 @@ func (m Model) Value(column string) yorm.ValueResult {
 	raw := sql2.RawBytes{}
 	r.Next()
 	r.Scan(&raw)
+	r.Close()
 	if len(raw) == 0 {
 		v.nil = true
 	} else {
@@ -182,6 +184,7 @@ func (m Model) Sum(column string) yorm.SumResult {
 	res := Sum{}
 	parseResponseData(r, &res)
 	s.num = res.Sum
+	r.Close()
 	return s
 }
 

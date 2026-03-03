@@ -2,9 +2,9 @@ package mysql
 
 import (
 	"database/sql"
-	"fmt"
 	"reflect"
 	"strings"
+	"yiarce/core/frame"
 )
 
 func parseResponseData(rows *sql.Rows, i interface{}) {
@@ -30,9 +30,18 @@ func parseResponseData(rows *sql.Rows, i interface{}) {
 			data[di] = &s
 			continue
 		}
-		ptr := sv.Field(index).Addr().Interface()
+		k := st.Field(index).Type.Kind()
+		var ptr interface{}
+		if k.String() == `ptr` {
+			k = sv.Field(index).Type().Elem().Kind()
+			newVal := reflect.New(sv.Field(index).Type().Elem())
+			sv.Field(index).Set(newVal)
+			ptr = sv.Field(index).Interface()
+		} else {
+			ptr = sv.Field(index).Addr().Interface()
+		}
 		//fmt.Println(`结构体映射字段:`, columnType.Name(), `对应的导出字段:`, st.Field(index).Name, `对应的真实字段指针是:`, ptr)
-		switch st.Field(index).Type.Kind() {
+		switch k {
 		case reflect.String:
 			data[di] = ptr.(*string)
 		case reflect.Int:
@@ -73,12 +82,14 @@ func parseResponseData(rows *sql.Rows, i interface{}) {
 			v := false
 			data[di] = &v
 		default:
-			panic(`sql结果转化出现暂不支持的类型:` + columnType.ScanType().Kind().String())
+			panic(`sql结果转化出现暂不支持的类型:` + st.Field(index).Type.Kind().String())
 		}
 	}
-	rows.Next()
-	err := rows.Scan(data...)
-	if err != nil {
-		fmt.Println(`sql异常`, err)
+	if rows.Next() {
+		err := rows.Scan(data...)
+		if err != nil {
+			frame.Errors(`yorm`, err.Error(), nil)
+		}
 	}
+
 }
