@@ -12,4 +12,5 @@ use (
 	./core
 	core/yorm/mysql
 	core/frame
+	core/config
 )

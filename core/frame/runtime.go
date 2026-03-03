@@ -2,12 +2,13 @@ package frame
 
 import (
 	"fmt"
-	"github.com/mattn/go-colorable"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"yiarce/core/date"
+
+	"github.com/mattn/go-colorable"
 )
 
 const (
@@ -35,6 +36,7 @@ func init() {
 
 func SetPackageName(name string) {
 	directory = name
+	fmt.Print("\033[1m")
 }
 
 func echoLog(packageName []string, path string, file string, line int) string {
@@ -49,7 +51,7 @@ func sorts(err *Error, packageName string, path string, log string) {
 		err.ApiCourse = append(err.ApiCourse, log)
 	}
 	if len(packageName) >= 11 && packageName[:11] == `yiarce/core` {
-		err.FrameCurse = append(err.FrameCurse, log)
+		err.FrameCourse = append(err.FrameCourse, log)
 	}
 	err.Course = append(err.Course, log)
 }
@@ -68,11 +70,18 @@ func Errors(types int, msg string, h HttpF, index ...int) {
 		}
 		packageName := strings.Split(runtime.FuncForPC(pc).Name(), `.`)
 		pathIndex := strings.LastIndex(codePath, `/`)
-		dCodePath := strings.Replace(codePath[:pathIndex], directory, "", 1)
-		if len(dCodePath) > 1 {
-			dCodePath = dCodePath[1:]
+		dCodePath := ""
+		if pathIndex > -1 {
+			dCodePath = strings.Replace(codePath[:pathIndex], directory, "", 1)
+			if len(dCodePath) > 1 {
+				dCodePath = dCodePath[1:]
+			}
 		}
-		sorts(&err, packageName[0], dCodePath, echoLog(packageName, dCodePath, codePath[pathIndex+1:], codeLine))
+		fileName := ""
+		if pathIndex > -1 && pathIndex < len(codePath)-1 {
+			fileName = codePath[pathIndex+1:]
+		}
+		sorts(&err, packageName[0], dCodePath, echoLog(packageName, dCodePath, fileName, codeLine))
 		if !strings.Contains(codePath, directory) {
 			i += 1
 			continue
@@ -103,6 +112,23 @@ func Prevent(tag int, msg string, index ...int) {
 	}
 }
 
+// NewError 创建一个新的Error对象
+func NewError(types int, msg string) *Error {
+	err := &Error{
+		Message: msg,
+	}
+	switch types {
+	case HttpError:
+		err.IsApi = true
+	case SelfError:
+		err.IsFrame = true
+	default:
+		err.IsFrame = false
+		err.IsApi = false
+	}
+	return err
+}
+
 func EchoError(i interface{}) {
 	err := i.(Error)
 	Println(err.Message)
@@ -130,26 +156,28 @@ func Println(i ...interface{}) {
 			i = i[1:]
 		}
 	}
-	pc, codePath, codeLine, _ := runtime.Caller(1)
-	packageName := strings.Split(runtime.FuncForPC(pc).Name(), `.`)
-	rootIndex := strings.LastIndex(codePath, directory)
-	dCodePath := ``
-	if rootIndex > -1 {
-		dCodePath = codePath[rootIndex:]
-	}
-	str := echoPrintLocation(packageName, dCodePath, codeLine)
 	if flag {
+		pc, codePath, codeLine, _ := runtime.Caller(1)
+		packageName := strings.Split(runtime.FuncForPC(pc).Name(), `.`)
+		rootIndex := strings.LastIndex(codePath, directory)
+		dCodePath := ``
+		if rootIndex > -1 {
+			dCodePath = codePath[rootIndex+len(directory)+1:]
+		}
+		str := echoPrintLocation(packageName, dCodePath, codeLine)
 		out.Write([]byte(fmt.Sprintf("\033[1m\033[34m%s\033[33m%s\033[31m%s", parseDate()+`[ 🐉 DragonNews ]`, str[1], ` `+str[2]+"\n")))
 	}
-	out.Write([]byte("\033[36m "))
+	out.Write([]byte("\033[36m"))
 	printParseData(i...)
 }
 
 func parseDate() string {
 	str := `[ `
-	t := date.Date()
-	h, _ := strconv.ParseInt(t.Hour(), 10, 64)
-	m, _ := strconv.ParseInt(t.Minutes(), 10, 64)
+	t := date.New()
+	hStr := t.Hour()
+	mStr := t.Minutes()
+	h, _ := strconv.Atoi(hStr)
+	m, _ := strconv.Atoi(mStr)
 	index := h
 	if index > 0 {
 		index -= 1
@@ -157,16 +185,24 @@ func parseDate() string {
 	if m > 29 {
 		index += 1
 	}
-	str += dateTag[index] + ` ` + date.Date().Custom(`Y-M-D H:I:S`) + ` ]`
+	if index >= len(dateTag) {
+		index = 0
+	}
+	str += dateTag[index] + ` ` + t.Custom(`Y-M-D H:I:S`) + ` ]`
 	return str
 }
 
 func printParseData(i ...interface{}) {
 	l := len(i)
 	for il, i3 := range i {
-		out.Write([]byte(serialize(i3)))
-		if il < l {
-			fmt.Print(` `)
+		v, err := serialize(i3)
+		if err != nil {
+			out.Write([]byte(fmt.Sprintf("[ frame-error ] %s -> %v", err.Error(), i3)))
+		} else {
+			out.Write([]byte(v))
+		}
+		if il < l-1 {
+			out.Write([]byte(` `))
 		}
 	}
 	out.Write([]byte("\n"))
