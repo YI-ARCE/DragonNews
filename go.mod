@@ -4,6 +4,7 @@ go 1.24.0
 
 replace (
 	yiarce/core => ./core
+	yiarce/core/cache => ./core/cache
 	yiarce/core/config => ./core/config
 	yiarce/core/curl => ./core/curl
 	yiarce/core/date => ./core/date
@@ -21,6 +22,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	golang.org/x/sys v0.41.0
 	yiarce/core v0.0.0-00010101000000-000000000000
+	yiarce/core/cache v0.0.0-00010101000000-000000000000
 	yiarce/core/config v0.0.0-00010101000000-000000000000
 	yiarce/core/date v0.0.0-00010101000000-000000000000
 	yiarce/core/dhttp v0.0.0-00010101000000-000000000000

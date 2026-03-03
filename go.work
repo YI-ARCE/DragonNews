@@ -3,6 +3,7 @@ go 1.24.0
 use (
 	.
 	./core
+	core/cache
 	core/curl
 	core/config
 	core/date
@@ -14,4 +15,5 @@ use (
 	core/yorm
 	core/yorm/mysql
 	core/dhttp
+	core/cache/file
 )

@@ -177,7 +177,7 @@ func Phone(d *dhttp.Dn) {
     //请求json
     {
         "dn_name":"龙讯科技",
-        "dn_url":"search.yiarce.cn"
+        "dn_url":"***.***.cn"
     }
 ~~~
 ~~~
@@ -192,7 +192,7 @@ func GetJson(d *dhttp.Dn) {
 }
     
     //结果返回map[string]string类型
-    map[dn_name:龙讯科技 dn_url:dragon-news.yiarce.cn]
+    map[dn_name:龙讯科技 dn_url:***.***.cn]
 ~~~
 ~~~
     //如果想自己接收数据
@@ -206,7 +206,7 @@ func GetJson(d *dhttp.Dn) {
     }
     
     //结果,使用不需要断言
-    map[dn_name:龙讯科技 dn_url:dragon-news.yiarce.cn]
+    map[dn_name:龙讯科技 dn_url:***.***.cn]
 ~~~
 
 * 获取POST表单,兼容form-data和x-www-form-urlencoded,都使用该方式获取即可
@@ -321,7 +321,8 @@ create table user_info
 ---------------
 * 设置缓存
 ```go
-import "yiarce/core/cache/file"
+package admin
+
 
 // 设置缓存，过期时间为1小时
 err := cache.Set("key", "value", time.Now().Add(1*time.Hour).Unix())
@@ -332,37 +333,50 @@ if err != nil {
 
 * 获取缓存
 ```go
-import "yiarce/core/cache/file"
+package main
 
-// 获取缓存
-value, err := cache.Get("key")
-if err != nil {
+import (
+	"fmt"
+	"yiarce/core/cache"
+)
+
+func Get()  {
+  // 获取缓存
+  value, err := cache.Get("key")
+  if err != nil {
     // 缓存不存在或已过期
-} else {
+  } else {
     // 使用缓存值
     fmt.Println(value)
+  }
 }
 ```
 
 * 删除缓存
 ```go
-import "yiarce/core/cache/file"
+package main
+import "yiarce/core/cache"
 
+func Del()  {
 // 删除缓存
 err := cache.Delete("key")
 if err != nil {
-    // 处理错误
+// 处理错误
+}
 }
 ```
 
 * 清除所有缓存
 ```go
-import "yiarce/core/cache/file"
+package main
+import "yiarce/core/cache"
 
+func Clear()  {
 // 清除所有缓存
 err := cache.Clear()
 if err != nil {
-    // 处理错误
+// 处理错误
+}
 }
 ```
 
@@ -370,13 +384,19 @@ if err != nil {
 ---------------
 * 基本启动
 ```go
-import "yiarce/core/dhttp"
+package main
+import (
+	"fmt"
+    "yiarce/core/dhttp"
+)
 
-// 使用默认配置启动HTTP服务（监听0.0.0.0:8080）
-err := dhttp.Listen()
-if err != nil {
+func main()  {
+  // 使用默认配置启动HTTP服务（监听0.0.0.0:8080）
+  err := dhttp.Listen()
+  if err != nil {
     fmt.Println("服务启动失败:", err)
     return
+  }
 }
 ```
 
