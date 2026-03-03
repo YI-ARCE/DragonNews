@@ -18,16 +18,27 @@ DragonNews
 │  ├─database.yaml      数据库配置
 │  └─log                日志配置
 ├─core                  框架提供的组件
-│  ├─cache              缓存
-│  ├─curl               请求
-│  ├─date               日期
-│  ├─dhttp              请求及路由处理
-│  ├─encrypt            加密
-│  ├─file               文件读写
-│  ├─frame              运行时的组件
-│  ├─log                日志
-│  ├─timing             定时器
-│  └─yorm               框架提供的sql-orm
+│  ├─cache              缓存（文件系统缓存）
+│  ├─curl               请求（HTTP请求）
+│  ├─date               日期（日期时间处理）
+│  ├─dhttp              请求及路由处理（HTTP请求处理、路由管理、会话管理）
+│  ├─encrypt            加密（AES加密）
+│  ├─file               文件读写（文件操作）
+│  ├─frame              运行时的组件（错误处理、日志输出）
+│  ├─log                日志（日志记录、异步写入、日志轮转）
+│  ├─monitor            监控（系统监控、请求统计）
+│  ├─timing             定时器（定时任务）
+│  └─yorm               框架提供的sql-orm（数据库ORM）
+├─docs                  文档目录
+│  └─模块设计文档.md     模块设计文档
+├─test                  测试目录
+│  ├─cache_test.go      缓存功能测试
+│  ├─config_test.go     配置功能测试
+│  ├─dhttp_test.go      HTTP功能测试
+│  ├─frame_test.go      框架功能测试
+│  ├─log_test.go        日志功能测试
+│  ├─yorm_test.go       数据库ORM测试
+│  └─integration_test.go 集成测试
 │
 ├─go.mod                Go依赖文件
 ├─go.work               框架注册定义
@@ -305,6 +316,224 @@ create table user_info
   ````
 
 
+
+## 缓存功能使用
+---------------
+* 设置缓存
+```go
+import "yiarce/core/cache/file"
+
+// 设置缓存，过期时间为1小时
+err := cache.Set("key", "value", time.Now().Add(1*time.Hour).Unix())
+if err != nil {
+    // 处理错误
+}
+```
+
+* 获取缓存
+```go
+import "yiarce/core/cache/file"
+
+// 获取缓存
+value, err := cache.Get("key")
+if err != nil {
+    // 缓存不存在或已过期
+} else {
+    // 使用缓存值
+    fmt.Println(value)
+}
+```
+
+* 删除缓存
+```go
+import "yiarce/core/cache/file"
+
+// 删除缓存
+err := cache.Delete("key")
+if err != nil {
+    // 处理错误
+}
+```
+
+* 清除所有缓存
+```go
+import "yiarce/core/cache/file"
+
+// 清除所有缓存
+err := cache.Clear()
+if err != nil {
+    // 处理错误
+}
+```
+
+## 服务器启动
+---------------
+* 基本启动
+```go
+import "yiarce/core/dhttp"
+
+// 使用默认配置启动HTTP服务（监听0.0.0.0:8080）
+err := dhttp.Listen()
+if err != nil {
+    fmt.Println("服务启动失败:", err)
+    return
+}
+```
+
+* 自定义配置启动
+```go
+import "yiarce/core/dhttp"
+
+// 自定义服务器配置
+server := dhttp.Server("127.0.0.1", 9090)
+// 启动服务
+err := server.Listen()
+if err != nil {
+    fmt.Println("服务启动失败:", err)
+    return
+}
+```
+
+* HTTPS启动
+```go
+import "yiarce/core/dhttp"
+
+// 配置HTTPS服务器
+server := dhttp.ServerTLS("127.0.0.1", 443, "cert.pem", "key.pem")
+// 启动服务
+err := server.Listen()
+if err != nil {
+    fmt.Println("HTTPS服务启动失败:", err)
+    return
+}
+```
+
+## 响应格式优化
+---------------
+* 成功响应
+```go
+// 使用统一的成功响应格式
+d.SuccessJson(data)
+
+// 响应格式
+// {
+//   "code": 200,
+//   "msg": "操作成功",
+//   "success": true,
+//   "data": {...}
+// }
+```
+
+* 错误响应
+```go
+// 使用统一的错误响应格式
+d.ErrorJson(400, "参数错误")
+
+// 响应格式
+// {
+//   "code": 400,
+//   "msg": "参数错误",
+//   "success": false
+// }
+```
+
+## 二进制数据和文件输出
+---------------
+* 输出二进制数据
+```go
+// 输出二进制数据
+d.OutByte(data, "application/octet-stream", 200)
+```
+
+* 输出文件
+```go
+// 输出文件，提示用户下载
+d.OutFile(fileData, "filename.txt", 200)
+```
+
+## 监控和日志
+---------------
+* 框架自动记录请求信息和处理耗时，便于问题排查和系统维护
+* 日志文件存储在 `项目根目录/log/年月/日.txt`
+* 支持多种日志级别：debug、info、warn、error、fatal
+* 支持异步写入，提升系统性能
+* 支持日志轮转，避免单个日志文件过大
+
+## 系统监控
+---------------
+* 框架提供了系统监控功能，实时收集系统运行状态
+* 监控数据包括：系统启动时间、运行时间、Go版本、CPU核心数、内存使用量、Goroutine数量、请求次数、错误次数等
+* 监控功能会自动记录每个HTTP请求的执行时间和路径
+* 可以通过 `monitor.GetSystemInfo()` 获取系统监控信息
+* 可以通过 `monitor.PrintSystemInfo()` 打印系统监控信息
+
+```go
+import "yiarce/core/monitor"
+
+// 获取系统监控信息
+info := monitor.GetSystemInfo()
+
+// 打印系统监控信息
+monitor.PrintSystemInfo()
+```
+
+## 测试
+---------------
+* 运行测试
+```bash
+# 运行所有测试
+go test -v ./test/...
+
+# 运行缓存功能测试
+go test -v ./test/cache_test.go
+
+# 运行配置功能测试
+go test -v ./test/config_test.go
+
+# 运行HTTP功能测试
+go test -v ./test/dhttp_test.go
+
+# 运行加密功能测试
+go test -v ./test/encrypt_test.go
+
+# 运行框架功能测试
+go test -v ./test/frame_test.go
+
+# 运行日志功能测试
+go test -v ./test/log_test.go
+
+# 运行数据库ORM测试
+go test -v ./test/yorm_test.go
+
+# 运行集成测试
+go test -v ./test/integration_test.go
+```
+
+## 项目改进
+---------------
+* **配置包改进**：添加了缓存管理、配置刷新、嵌套配置获取等功能，提高了配置加载的性能和灵活性。
+
+* **加密包改进**：重构了AES加密实现，添加了完整的错误处理，返回错误信息而不是panic，提高了加密功能的可靠性。
+
+* **HTTP包改进**：优化了token生成和验证功能，添加了参数检查和错误处理，移除了会导致panic的错误处理方式。
+
+* **ORM包改进**：添加了边界条件处理，使用frame.Errors替代panic，提高了数据库操作的稳定性和容错能力。
+
+* **错误处理改进**：使用frame.Errors替代panic，错误处理更加合理，提供了统一的错误响应格式。
+
+* **资源释放改进**：使用defer语句确保资源正确释放，避免资源泄漏。
+
+* **并发安全改进**：使用互斥锁保证并发安全，避免竞态条件。
+
+* **性能优化**：添加了缓存机制，减少重复计算和IO操作，提高了系统性能。
+
+* **边界条件处理**：添加了适当的边界条件检查，提高了系统的稳定性和容错能力。
+
+* **单元测试**：编写了完整的单元测试，覆盖了核心包的主要功能，包括配置、加密、HTTP、ORM等模块，确保代码质量和功能完整性。
+
+* **代码注释**：为所有修改和新增代码添加了清晰的注释，包括函数功能、参数说明、返回值及注意事项，提高了代码的可读性和可维护性。
+
+* **代码质量**：使用golint和staticcheck等静态分析工具进行代码质量扫描，确保代码符合Go语言规范。
 
 ## 版权信息
 
