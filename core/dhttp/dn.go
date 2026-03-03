@@ -187,7 +187,7 @@ func (d *Dn) BodyFormat(format interface{}, errMsg ...string) {
 		if len(errMsg) > 0 {
 			frame.Errors(frame.HttpError, errMsg[0], d)
 		} else {
-			frame.Errors(frame.HttpError, `请求数据解析失败`, d)
+			frame.Errors(frame.HttpError, `提交内容不正确,请检查`, d)
 		}
 	}
 }

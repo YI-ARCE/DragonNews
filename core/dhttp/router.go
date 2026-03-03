@@ -24,24 +24,24 @@ func init() {
 // 参数：
 //   - path: 路由路径
 //   - f: 路由处理函数
-//   - noAuth: 是否需要权限检查
-func routerCreate(types string, f func(r *Dn), noAuth ...bool) {
+//   - auth: 是否需要权限检查
+func routerCreate(types string, f func(r *Dn), auth ...bool) {
 	if f == nil {
 		fmt.Println("[ERROR] 路由处理函数不能为空")
 		return
 	}
 
-	auth := true
-	if len(noAuth) > 0 && noAuth[0] {
-		auth = false
+	checkAuth := true
+	if len(auth) > 0 {
+		checkAuth = auth[0]
 	}
 
 	routerMutex.Lock()
 	defer routerMutex.Unlock()
 	path := getFuncPkg(f)
-	monitor.Debug(`router`, `register api -> [ `+types+` ]`, path)
+	monitor.Debug(`router`, `register api -> [ `+types+` ]`, path, `|`, `auth =`, checkAuth)
 	path = path + `_` + types
-	manager[path] = &routerConstruct{f: f, auth: auth}
+	manager[path] = &routerConstruct{f: f, auth: checkAuth}
 }
 
 // Get 注册GET请求路由
@@ -84,21 +84,23 @@ func execute(r *Dn) {
 		if rs := recover(); rs != nil {
 			if frameErr, ok := rs.(frame.Error); ok {
 				// 记录错误信息
-				r.Log.Error(rs)
+				r.Log.Error(frameErr)
 				// 使用统一的错误响应格式
 				errorResp := map[string]interface{}{
-					"code":    frameErr.Code,
+					"code":    0,
 					"msg":     frameErr.Message,
 					"success": false,
 				}
-				r.Json(errorResp, frameErr.Code)
+				monitor.Error(frameErr)
+				r.Json(errorResp)
 			} else {
 				// 处理非预期的错误
 				defer func() {
 					if rs := recover(); rs != nil {
-						if _, ok := rs.(frame.Error); ok {
+						if frameErr, ok := rs.(frame.Error); ok {
 							// 记录错误信息
-							r.Log.Error(rs)
+							r.Log.Error(frameErr)
+							monitor.Error(frameErr)
 						}
 					}
 				}()
@@ -109,6 +111,7 @@ func execute(r *Dn) {
 					"success": false,
 				}
 				r.Json(errorResp, 500)
+				frame.Errors(frame.UnknowError, fmt.Sprintf("%v", rs), r, 3)
 			}
 		}
 	}()

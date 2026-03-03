@@ -31,6 +31,10 @@ type StatementData struct {
 	s Statement
 }
 
+func (d *StatementData) Sum(column string) SumResult {
+	return d.s.d.driver.GetModel(d).Sum(column)
+}
+
 // Name 表名结构
 type Name struct {
 	Name  string // 表名
@@ -92,7 +96,7 @@ func checkType(i interface{}) string {
 	case reflect.Float32, reflect.Float64:
 		return strconv.FormatFloat(r.Float(), 'f', -1, 64)
 	default:
-		frame.Errors(frame.SelfError, "[yorm][sql-参数类型判断]Found build unsupported types : "+t.Kind().String(), nil)
+		frame.Errors(_tag, "类型转换失败: "+t.Kind().String(), nil)
 	}
 	return ""
 }
@@ -108,7 +112,7 @@ func checkType(i interface{}) string {
 func (d *StatementData) Table(name string, alias ...string) ModelTransfer {
 	// 检查表名参数
 	if name == "" {
-		frame.Errors(frame.SelfError, "table name cannot be empty", nil)
+		frame.Errors(_tag, "查询表明不能为空", nil)
 		return d
 	}
 
@@ -117,7 +121,7 @@ func (d *StatementData) Table(name string, alias ...string) ModelTransfer {
 	if l > 0 {
 		// 检查别名参数
 		if alias[0] == "" {
-			frame.Errors(frame.SelfError, "table alias cannot be empty", nil)
+			frame.Errors(_tag, "查询表明不能为空", nil)
 			return d
 		}
 		d.s.Name.Alias = alias[0]
@@ -155,7 +159,7 @@ func (d *StatementData) Where(column string, w ...interface{}) ModelTransfer {
 		wh.Column = column
 		exp, flag := w[0].(string)
 		if !flag {
-			frame.Errors(frame.SelfError, "[yorm][sql-where-func] w如果传递两个参数,第一个参数表示操作符,也就是说,只支持字符", nil)
+			frame.Errors(_tag, "[yorm][sql-where-func] w如果传递两个参数,第一个参数表示操作符,也就是说,只支持字符", nil)
 			return d
 		}
 		wh.Exp = exp
@@ -215,11 +219,11 @@ func (d *StatementData) Field(column string) ModelTransfer {
 //   - ModelTransfer: 模型转换接口
 func (d *StatementData) Page(page int, size int) ModelTransfer {
 	if page < 1 {
-		frame.Errors(frame.SelfError, "page can't be less than 1", nil)
+		frame.Errors(_tag, "查询页码不能小于1", nil)
 		return d
 	}
 	if size < 1 {
-		frame.Errors(frame.SelfError, "size can't be less than 1", nil)
+		frame.Errors(_tag, "查询条数不能小于1", nil)
 		return d
 	}
 	d.s.Pages.Num = (page - 1) * size
@@ -236,7 +240,7 @@ func (d *StatementData) Page(page int, size int) ModelTransfer {
 //   - ModelTransfer: 模型转换接口
 func (d *StatementData) Limit(size int) ModelTransfer {
 	if size == 0 {
-		frame.Errors(frame.SelfError, "the size cannot be less than 1", nil)
+		frame.Errors(_tag, "查询条数不能小于1", nil)
 		return d
 	}
 	d.s.Pages.Num = 0
@@ -354,4 +358,11 @@ func (d *StatementData) Db() *Db {
 //   - *Statement: 语句
 func (d *StatementData) GetStatement() *Statement {
 	return &d.s
+}
+
+func (d *StatementData) Count() CountResult {
+	return d.s.d.driver.GetModel(d).Count()
+}
+func (d *StatementData) Value(column string) ValueResult {
+	return d.s.d.driver.GetModel(d).Value(column)
 }

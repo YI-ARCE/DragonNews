@@ -6,21 +6,26 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"yiarce/core"
 	"yiarce/core/date"
 
 	"github.com/mattn/go-colorable"
 )
 
 const (
-	HttpError = iota
-	SelfError
-	UnfriendError
-	TokenError
-	SignError
+	HttpError   = `http`
+	SelfError   = `frame`
+	UnknowError = `unknow`
 )
 
+type messageColor string
+
+type PrintConfig string
+
 const (
-	PrintDisAbleDebugInfo = `[dragon]PrintDisAbleDebugInfo`
+	PrintDisAbleDebugInfo = PrintConfig(`[dragon]PrintDisAbleDebugInfo`)
+	DefaultColor          = messageColor("\033[36m")
+	ErrorColor            = messageColor("\033[31m")
 )
 
 var directory string
@@ -41,7 +46,7 @@ func SetPackageName(name string) {
 
 func echoLog(packageName []string, path string, file string, line int) string {
 	l := len(packageName)
-	return `[📦 ` + packageName[0] + `][📁 ` + path + `][🪧 ` + packageName[l-1] + `()] ` + file + ` 第 ` + strconv.Itoa(line) + ` 行`
+	return `[ 📁 ` + path + `/` + file + `:` + strconv.Itoa(line) + ` ] ` + `🪧` + packageName[l-1] + `()`
 }
 
 // 报错分类
@@ -57,12 +62,19 @@ func sorts(err *Error, packageName string, path string, log string) {
 }
 
 // Errors 错误拦截处理
-func Errors(types int, msg string, h HttpF, index ...int) {
-	err := Error{}
+func Errors(tag string, msg string, d HttpF, index ...int) {
+	err := Error{Tag: tag}
+	if d != nil {
+		err.RequestArgs = HttpRequest{
+			Get:  d.GetAll(),
+			Body: core.Replace2Empty(string(d.Body()), "\r\n", "\r", "\n"),
+		}
+	}
 	i := 1
 	if len(index) > 0 {
 		i = index[0]
 	}
+	dl := len(directory)
 	for {
 		pc, codePath, codeLine, oks := runtime.Caller(i)
 		if !oks {
@@ -72,9 +84,12 @@ func Errors(types int, msg string, h HttpF, index ...int) {
 		pathIndex := strings.LastIndex(codePath, `/`)
 		dCodePath := ""
 		if pathIndex > -1 {
-			dCodePath = strings.Replace(codePath[:pathIndex], directory, "", 1)
-			if len(dCodePath) > 1 {
-				dCodePath = dCodePath[1:]
+			startIndex := strings.Index(codePath[:pathIndex], directory)
+			if startIndex > -1 {
+				dCodePath = codePath[startIndex+dl+1 : pathIndex]
+			} else {
+				i += 1
+				continue
 			}
 		}
 		fileName := ""
@@ -88,23 +103,11 @@ func Errors(types int, msg string, h HttpF, index ...int) {
 		}
 		i += 1
 	}
-	switch types {
-	case HttpError:
-		err.IsApi = true
-		if h != nil {
-			h.Write(200, `{"code":0,"msg":"`+msg+`"}`)
-		}
-	case SelfError:
-		err.IsFrame = true
-	default:
-		err.IsFrame = false
-		err.IsApi = false
-	}
 	err.Message = msg
 	panic(err)
 }
 
-func Prevent(tag int, msg string, index ...int) {
+func Prevent(tag string, msg string, index ...int) {
 	if len(index) > 0 {
 		Errors(tag, msg, nil, index[0])
 	} else {
@@ -113,18 +116,10 @@ func Prevent(tag int, msg string, index ...int) {
 }
 
 // NewError 创建一个新的Error对象
-func NewError(types int, msg string) *Error {
+func NewError(tag string, msg string) *Error {
 	err := &Error{
+		Tag:     tag,
 		Message: msg,
-	}
-	switch types {
-	case HttpError:
-		err.IsApi = true
-	case SelfError:
-		err.IsFrame = true
-	default:
-		err.IsFrame = false
-		err.IsApi = false
 	}
 	return err
 }
@@ -149,11 +144,19 @@ func echoPrintLocation(packageName []string, path string, line int) []string {
 
 func Println(i ...interface{}) {
 	flag := true
-	if len(i) > 1 {
-		c, ok := i[0].(string)
-		if ok && c == PrintDisAbleDebugInfo {
-			flag = false
-			i = i[1:]
+	color := DefaultColor
+	var pt []interface{}
+	for _, s := range i {
+		switch s.(type) {
+		case messageColor:
+			color = s.(messageColor)
+		case PrintConfig:
+			switch s.(PrintConfig) {
+			case PrintDisAbleDebugInfo:
+				flag = false
+			}
+		default:
+			pt = append(pt, s)
 		}
 	}
 	if flag {
@@ -167,8 +170,8 @@ func Println(i ...interface{}) {
 		str := echoPrintLocation(packageName, dCodePath, codeLine)
 		out.Write([]byte(fmt.Sprintf("\033[1m\033[34m%s\033[33m%s\033[31m%s", parseDate()+`[ 🐉 DragonNews ]`, str[1], ` `+str[2]+"\n")))
 	}
-	out.Write([]byte("\033[36m"))
-	printParseData(i...)
+	out.Write([]byte(color))
+	printParseData(pt...)
 }
 
 func parseDate() string {
@@ -178,17 +181,11 @@ func parseDate() string {
 	mStr := t.Minutes()
 	h, _ := strconv.Atoi(hStr)
 	m, _ := strconv.Atoi(mStr)
-	index := h
-	if index > 0 {
-		index -= 1
-	}
+	h = h % 12 * 2
 	if m > 29 {
-		index += 1
+		h += 1
 	}
-	if index >= len(dateTag) {
-		index = 0
-	}
-	str += dateTag[index] + ` ` + t.Custom(`Y-M-D H:I:S`) + ` ]`
+	str += dateTag[h] + ` ` + t.Custom(`Y-M-D H:I:S`) + ` ]`
 	return str
 }
 

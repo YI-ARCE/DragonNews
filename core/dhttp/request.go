@@ -1,7 +1,6 @@
 package dhttp
 
 import (
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -32,7 +31,7 @@ func newRequest(w *http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 			// 记录错误
-			fmt.Printf("[ERROR] 请求处理异常: %v\n", err)
+			monitor.TagError(`error`, err)
 			// 返回500错误
 			(*w).Header().Set("Content-Type", "application/json;charset=utf-8")
 			_, _ = (*w).Write([]byte(`{"code":500,"msg":"服务器内部错误","success":false}`))
@@ -149,13 +148,13 @@ func newRequest(w *http.ResponseWriter, r *http.Request) {
 	d.Log = log.Init(d.host, d.method, d.uri, d.ip)
 	d.response = w
 	d.request = r
-	monitor.Debug(`request`, `[`, startTime.HIS(`:`), `]`, `[ `+d.uri+` ]`, `[`, r.Method, `]`, `start`)
+	monitor.Debug(`http`, `[`, startTime.HIS(`:`), `]`, `[ `+d.uri+` ]`, `[`, r.Method, `]`, `start`)
 
 	// 执行请求处理
 	execute(d)
 	// 记录请求结束时间和处理耗时
 	endTime := date.New()
-	monitor.Debug(`request`, `[`, endTime.HIS(`:`), `]`, `[ `+d.uri+` ]`, `[ CLOSE ]`, `handle`, endTime.UnixMilli()-startTime.UnixMilli(), `ms`)
+	monitor.Debug(`http`, `[`, endTime.HIS(`:`), `]`, `[ `+d.uri+` ]`, `[ CLOSE ]`, `handle`, endTime.UnixMilli()-startTime.UnixMilli(), `ms`)
 	d.Log.Out()
 }
 

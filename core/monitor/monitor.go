@@ -133,3 +133,37 @@ func Debug(tag string, s ...interface{}) {
 	}
 	frame.Println(c...)
 }
+
+func TagError(tag string, s ...interface{}) {
+	tagV := `[ error`
+	if tag != `` {
+		tagV += `-` + tag + ` ]`
+	} else {
+		tagV += ` ]`
+	}
+	c := []interface{}{frame.PrintDisAbleDebugInfo, frame.ErrorColor, tagV}
+	for _, s2 := range s {
+		c = append(c, s2)
+	}
+	frame.Println(c...)
+}
+
+func Error(err frame.Error) {
+	switch err.Tag {
+	case frame.HttpError:
+		TagError(err.Tag, err.ApiCourse[0], err.Error())
+	case frame.SelfError:
+		TagError(err.Tag, err.FrameCourse[0], err.Error())
+	default:
+		var e []interface{}
+		if len(err.FrameCourse) > 0 {
+			e = append(e, err.FrameCourse[0]+` ->`, err.Error()+"\n -")
+		}
+		if len(err.ApiCourse) > 0 {
+			e = append(e, err.ApiCourse[0])
+		} else {
+			e = append(e, err.Course[0])
+		}
+		TagError(err.Tag, e...)
+	}
+}

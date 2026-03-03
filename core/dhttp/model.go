@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sync"
 	"yiarce/core/log"
+	"yiarce/core/yorm"
 )
 
 type routerConstruct struct {
@@ -27,8 +28,7 @@ type Dn struct {
 	request  *http.Request
 	Log      *log.Log // 日志
 	Token    token.Context
-	// 数据库连接，后续会通过注入方式设置
-	Db interface{} `json:"-"`
+	Db       *yorm.Db
 }
 
 type session struct {

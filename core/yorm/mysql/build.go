@@ -8,10 +8,7 @@ import (
 	"yiarce/core/yorm"
 )
 
-const (
-	mapOrStruct = "only support map or struct"
-	mapMustBe   = "the map key must be a string"
-)
+const _tag = `mysql`
 
 func checkType(i interface{}, f ...bool) string {
 	r := reflect.ValueOf(i)
@@ -23,9 +20,8 @@ func checkType(i interface{}, f ...bool) string {
 		}
 		if len(f) > 0 {
 			return `"` + strings.ReplaceAll(strings.ReplaceAll(i, `\`, `\\`), `"`, `\"`) + `"`
-		} else {
-			return strings.ReplaceAll(strings.ReplaceAll(i, `\`, `\\`), `"`, `\"`)
 		}
+		return strings.ReplaceAll(strings.ReplaceAll(i, `\`, `\\`), `"`, `\"`)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return strconv.FormatInt(r.Int(), 10)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -33,7 +29,7 @@ func checkType(i interface{}, f ...bool) string {
 	case reflect.Float32, reflect.Float64:
 		return strconv.FormatFloat(r.Float(), 'f', -1, 64)
 	default:
-		frame.Errors(frame.SelfError, "Found build unsupported types : "+r.Kind().String(), nil)
+		frame.Errors(_tag, "不支持的解包类型: "+r.Kind().String(), nil)
 		return ""
 	}
 }
@@ -183,7 +179,7 @@ func update(c *yorm.Statement, i interface{}) string {
 		m := r.MapRange()
 		for m.Next() {
 			if m.Key().Kind() != reflect.String {
-				frame.Errors(frame.SelfError, mapMustBe, nil)
+				frame.Errors(_tag, `map键类型必须为string`, nil)
 				return ""
 			}
 			sql = strBuild(sql, m.Key().String(), " = ", checkType(m.Value().Interface(), true), ",")
@@ -197,7 +193,7 @@ func update(c *yorm.Statement, i interface{}) string {
 			sql = strBuild(sql, i, ",")
 		}
 	default:
-		frame.Errors(frame.SelfError, mapOrStruct, nil)
+		frame.Errors(_tag, `仅支持map与struct类型`, nil)
 		return ""
 	}
 	// 移除最后的逗号
@@ -250,7 +246,7 @@ func exec(c *yorm.Statement, i interface{}) string {
 		valStr := ""
 		for m.Next() {
 			if m.Key().Kind() != reflect.String {
-				frame.Errors(frame.SelfError, mapMustBe, nil)
+				frame.Errors(_tag, `map键类型必须为string`, nil)
 				return ""
 			}
 			keyStr = strBuild(keyStr, "`", m.Key().String(), "`,")
@@ -260,7 +256,7 @@ func exec(c *yorm.Statement, i interface{}) string {
 		valStr = valStr[0 : len(valStr)-1]
 		sql = strJoin(sql, " (", keyStr, ") VALUES (", valStr, ")")
 	default:
-		frame.Errors(frame.SelfError, mapOrStruct, nil)
+		frame.Errors(_tag, `仅支持map与struct类型`, nil)
 		return ""
 	}
 	return sql

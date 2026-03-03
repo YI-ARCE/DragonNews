@@ -18,6 +18,8 @@ var (
 	d         = make(map[string]Driver)
 )
 
+const _tag = `yorm`
+
 type Db struct {
 	driver Driver
 	conn   *sql.DB
@@ -32,7 +34,7 @@ func Register(name string, driver Driver) {
 	driversMu.Lock()
 	defer driversMu.Unlock()
 	if driver == nil {
-		frame.Errors(frame.SelfError, "驱动不存在", nil)
+		frame.Errors(_tag, "驱动不存在", nil)
 		return
 	}
 	if _, dup := d[name]; dup {
@@ -243,7 +245,7 @@ func (d *Db) Where(column string, w ...interface{}) ModelTransfer {
 		wh.Column = column
 		exp, flag := w[0].(string)
 		if !flag {
-			frame.Errors(frame.SelfError, "if two arguments are passed, the first one represents the operator, that is, only characters are supported", nil)
+			frame.Errors(_tag, "if two arguments are passed, the first one represents the operator, that is, only characters are supported", nil)
 			return &StatementData{s}
 		}
 		wh.Exp = exp
@@ -286,13 +288,13 @@ func (d *Db) Join(table string, condition string, link ...string) ModelTransfer 
 //   - ModelTransfer: 模型转换接口
 func (d *Db) Page(page int, size int) ModelTransfer {
 	if page < 1 {
-		frame.Errors(frame.SelfError, "page can't be less than 1", nil)
+		frame.Errors(_tag, "page can't be less than 1", nil)
 		s := sample
 		s.d = d
 		return &StatementData{s}
 	}
 	if size < 1 {
-		frame.Errors(frame.SelfError, "size can't be less than 1", nil)
+		frame.Errors(_tag, "size can't be less than 1", nil)
 		s := sample
 		s.d = d
 		return &StatementData{s}
@@ -315,7 +317,7 @@ func (d *Db) Page(page int, size int) ModelTransfer {
 //   - ModelTransfer: 模型转换接口
 func (d *Db) Limit(size int) ModelTransfer {
 	if size == 0 {
-		frame.Errors(frame.SelfError, "the size cannot be less than 1", nil)
+		frame.Errors(_tag, "the size cannot be less than 1", nil)
 		s := sample
 		s.d = d
 		return &StatementData{s}
@@ -392,13 +394,15 @@ func (d *Db) Close() error {
 //
 // 返回值：
 //   - error: 错误信息
-func (d *Db) Begin() error {
+func (d *Db) Begin() (*Db, error) {
 	tx, err := d.conn.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	d.tx = tx
-	return nil
+	return &Db{
+		conn: d.conn,
+		tx:   tx,
+	}, nil
 }
 
 // Commit 提交事务

@@ -20,6 +20,9 @@ type ModelTransfer interface {
 	Select(fs ...FormatStruct) QueryResults
 	Insert(i interface{}) ExecResult
 	Update(i interface{}) ExecResult
+	Count() CountResult
+	Value(column string) ValueResult
+	Sum(column string) SumResult
 	Delete() ExecResult
 }
 
@@ -28,6 +31,9 @@ type ImplTransfer interface {
 	Select(fs ...FormatStruct) QueryResults
 	Insert(i interface{}) ExecResult
 	Update(i interface{}) ExecResult
+	Count() CountResult
+	Value(column string) ValueResult
+	Sum(column string) SumResult
 	Delete() ExecResult
 }
 
@@ -44,7 +50,6 @@ type Config struct {
 type QueryResults interface {
 	Result() []map[string]string
 	Err() error
-	Format(p FormatStruct)
 	Sql() string
 	Concat(key string, flag bool) string
 }
@@ -52,7 +57,6 @@ type QueryResults interface {
 type QueryResult interface {
 	Result() map[string]string
 	Err() error
-	Format(p FormatStruct)
 	Sql() string
 }
 
@@ -61,4 +65,30 @@ type ExecResult interface {
 	Num() int64
 	Err() error
 	Sql() string
+}
+
+type CountResult interface {
+	Num() int64
+	Err() error
+	Sql() string
+}
+
+type SumResult interface {
+	Num() int64
+	Err() error
+	Sql() string
+}
+
+type ValueResult interface {
+	String() string
+	Err() error
+	Sql() string
+	// Float 获取浮点值
+	Float64() float64
+	Float() float32
+	Int() int
+	Int64() int64
+	IsNil() bool
+	// Date 只有值为时间戳且类型为int时才有效,获取日期值
+	Date(format ...string) string
 }

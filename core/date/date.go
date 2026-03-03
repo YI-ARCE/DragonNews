@@ -9,6 +9,8 @@ type Date struct {
 	d time.Time
 }
 
+const DATE = "2006-01-02"
+
 const DATETIME = "2006-01-02 15:04:05"
 
 var arr = map[string]string{
@@ -19,7 +21,7 @@ var arr = map[string]string{
 	"D":  "02",
 	"d":  "2",
 	"H":  "15",
-	"HH": "",
+	"HH": "15",
 	"h":  "3",
 	"hh": "03",
 	"I":  "04",
@@ -35,11 +37,11 @@ func New() Date {
 
 func DateTime() string {
 	d := time.Now()
-	return d.Format(DATETIME)
+	return d.Format("2006-01-02 15:04:05")
 }
 
 func ParseDate(dates string) (Date, error) {
-	parse, err := time.Parse(DATETIME, dates)
+	parse, err := time.Parse("2006-01-02 15:04:05", dates)
 	if err != nil {
 		return Date{}, err
 	}

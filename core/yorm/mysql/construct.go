@@ -81,5 +81,4 @@ func parseResponseData(rows *sql.Rows, i interface{}) {
 	if err != nil {
 		fmt.Println(`sql异常`, err)
 	}
-	rows.Close()
 }

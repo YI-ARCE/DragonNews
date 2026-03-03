@@ -1,16 +1,17 @@
-go 1.21
+go 1.24.0
 
 use (
 	.
-	core/log
-	core/date
-	core/curl
-	core/encrypt
-	core/yorm
-	core/timing
-	core/file
 	./core
-	core/yorm/mysql
-	core/frame
+	core/curl
 	core/config
+	core/date
+	core/encrypt
+	core/file
+	core/frame
+	core/log
+	core/timing
+	core/yorm
+	core/yorm/mysql
+	core/dhttp
 )
