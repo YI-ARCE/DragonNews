@@ -1,10 +1,10 @@
 package dhttp
 
 import (
+	"dragonNews/utils/token"
 	"net/http"
 	"sync"
 	"yiarce/core/log"
-	"yiarce/core/yorm"
 )
 
 type routerConstruct struct {
@@ -26,8 +26,9 @@ type Dn struct {
 	response *http.ResponseWriter // 响应
 	request  *http.Request
 	Log      *log.Log // 日志
-	Token    Token
-	*yorm.Db
+	Token    token.Context
+	// 数据库连接，后续会通过注入方式设置
+	Db interface{} `json:"-"`
 }
 
 type session struct {
@@ -39,7 +40,7 @@ type session struct {
 }
 
 type storage struct {
-	lock sync.Mutex
+	lock sync.RWMutex
 	pool map[string]session
 }
 

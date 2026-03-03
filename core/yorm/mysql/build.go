@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"unsafe"
+	"yiarce/core/frame"
 	"yiarce/core/yorm"
 )
 
@@ -33,7 +33,8 @@ func checkType(i interface{}, f ...bool) string {
 	case reflect.Float32, reflect.Float64:
 		return strconv.FormatFloat(r.Float(), 'f', -1, 64)
 	default:
-		panic("Found build unsupported types : " + r.Kind().String())
+		frame.Errors(frame.SelfError, "Found build unsupported types : "+r.Kind().String(), nil)
+		return ""
 	}
 }
 
@@ -160,12 +161,30 @@ func update(c *yorm.Statement, i interface{}) string {
 	r := reflect.ValueOf(i)
 	switch t.Kind() {
 	case reflect.Struct:
-
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			value := r.Field(i)
+			// 跳过未导出的字段
+			if field.PkgPath != "" {
+				continue
+			}
+			// 获取字段名，优先使用json标签
+			fieldName := field.Name
+			if tag := field.Tag.Get("json"); tag != "" {
+				fieldName = strings.Split(tag, ",")[0]
+			}
+			// 跳过空值字段
+			if value.IsZero() {
+				continue
+			}
+			sql = strBuild(sql, fieldName, " = ", checkType(value.Interface(), true), ",")
+		}
 	case reflect.Map:
 		m := r.MapRange()
 		for m.Next() {
 			if m.Key().Kind() != reflect.String {
-				panic(mapMustBe)
+				frame.Errors(frame.SelfError, mapMustBe, nil)
+				return ""
 			}
 			sql = strBuild(sql, m.Key().String(), " = ", checkType(m.Value().Interface(), true), ",")
 		}
@@ -178,9 +197,13 @@ func update(c *yorm.Statement, i interface{}) string {
 			sql = strBuild(sql, i, ",")
 		}
 	default:
-		panic(mapOrStruct)
+		frame.Errors(frame.SelfError, mapOrStruct, nil)
+		return ""
 	}
-	sql = sql[:len(sql)-1]
+	// 移除最后的逗号
+	if strings.HasSuffix(sql, ",") {
+		sql = sql[:len(sql)-1]
+	}
 	sql = strJoin(sql, parseWhere(c.Wheres))
 	return sql
 }
@@ -191,7 +214,35 @@ func exec(c *yorm.Statement, i interface{}) string {
 	r := reflect.ValueOf(i)
 	switch t.Kind() {
 	case reflect.Struct:
-
+		keyStr := ""
+		valStr := ""
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			value := r.Field(i)
+			// 跳过未导出的字段
+			if field.PkgPath != "" {
+				continue
+			}
+			// 跳过空值字段
+			if value.IsZero() {
+				continue
+			}
+			// 获取字段名，优先使用json标签
+			fieldName := field.Name
+			if tag := field.Tag.Get("json"); tag != "" {
+				fieldName = strings.Split(tag, ",")[0]
+			}
+			keyStr = strBuild(keyStr, "`", fieldName, "`", ",")
+			valStr = strBuild(valStr, checkType(value.Interface(), true), ",")
+		}
+		// 移除最后的逗号
+		if strings.HasSuffix(keyStr, ",") {
+			keyStr = keyStr[:len(keyStr)-1]
+		}
+		if strings.HasSuffix(valStr, ",") {
+			valStr = valStr[:len(valStr)-1]
+		}
+		sql = strJoin(sql, " (", keyStr, ") VALUES (", valStr, ")")
 	case reflect.Map:
 		m := r.MapRange()
 
@@ -199,7 +250,8 @@ func exec(c *yorm.Statement, i interface{}) string {
 		valStr := ""
 		for m.Next() {
 			if m.Key().Kind() != reflect.String {
-				panic(mapMustBe)
+				frame.Errors(frame.SelfError, mapMustBe, nil)
+				return ""
 			}
 			keyStr = strBuild(keyStr, "`", m.Key().String(), "`,")
 			valStr = strBuild(valStr, checkType(m.Value().Interface(), true), ",")
@@ -208,7 +260,8 @@ func exec(c *yorm.Statement, i interface{}) string {
 		valStr = valStr[0 : len(valStr)-1]
 		sql = strJoin(sql, " (", keyStr, ") VALUES (", valStr, ")")
 	default:
-		panic(mapOrStruct)
+		frame.Errors(frame.SelfError, mapOrStruct, nil)
+		return ""
 	}
 	return sql
 }
@@ -237,10 +290,9 @@ func strJoin(str string, s ...string) string {
 
 func strBuild(str string, s ...string) string {
 	b := strings.Builder{}
-	b.Write(*(*[]byte)(unsafe.Pointer(&str)))
+	b.WriteString(str)
 	for _, v := range s {
-		b.Write(*(*[]byte)(unsafe.Pointer(&v)))
+		b.WriteString(v)
 	}
-	str = b.String()
-	return str
+	return b.String()
 }

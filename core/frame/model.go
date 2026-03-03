@@ -14,6 +14,7 @@ type ErrorPackage struct {
 }
 
 type Error struct {
+	Code    int    // 错误码
 	Message string // 报错提示
 	// 方法接收的内容,仅限于框架自身
 	RequestArgs []interface{}
@@ -35,9 +36,32 @@ type Error struct {
 	// HTTP服务运行过程
 	ApiCourse []string
 	// 框架运行过程
-	FrameCurse []string
+	FrameCourse []string
+}
+
+// Error 实现error接口
+func (e *Error) Error() string {
+	return e.Message
 }
 
 type HttpF interface {
 	Write(code int, content string, header ...map[string]string)
 }
+
+// ErrorCode 错误码定义
+const (
+	// 系统错误
+	SystemError = 500
+	// 参数错误
+	ParamError = 400
+	// 权限错误
+	AuthError = 403
+	// 资源不存在
+	NotFoundError = 404
+	// 业务错误
+	BusinessError = 1000
+	// 数据库错误
+	DatabaseError = 2000
+	// 网络错误
+	NetworkError = 3000
+)

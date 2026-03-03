@@ -3,35 +3,10 @@ package dhttp
 import (
 	"encoding/json"
 	"errors"
-	"reflect"
-	"unsafe"
+	"net/http"
 	"yiarce/core/frame"
-	"yiarce/core/yorm"
 	_ "yiarce/core/yorm/mysql"
 )
-
-// 自定义注入,用于适应修改后的结构
-//
-//	auth 作为接口权限访问的检查,只有通过检查之后才会执行接口
-//	若检查不通过,请在此执行响应结果并返回false
-//	若不检查权限则直接返回true即可
-func inject(d *Dn, auth bool) bool {
-	if auth {
-		// auth 检查不通过
-		// d.Write(403, `{"msg":"访问接口没有权限","error":"no auth"}`)
-		// return false
-	}
-	d.Token = DecryptToken(`M71q1pitQRsHd4Z13wYZEuenR8FSS53iBMd3XH+zy5igI2r11DzY8CyBZIF2nqNt`)
-	// auth检查通过
-	d.Db, _ = yorm.ConnMysql(yorm.Config{
-		Host:     "127.0.0.1",
-		Port:     "3306",
-		Database: "sakura_disc",
-		Username: "root",
-		Password: "6353453wcR",
-	})
-	return true
-}
 
 func (d *Dn) Session() SessionReader {
 	return SessionReader{d.request, d.response}
@@ -44,7 +19,10 @@ func (d *Dn) Host() string {
 
 // Header 请求头
 func (d *Dn) Header(key string) string {
-	return d.header[key][0]
+	if values, ok := d.header[key]; ok && len(values) > 0 {
+		return values[0]
+	}
+	return ""
 }
 
 // Headers 获取所有请求头内容
@@ -130,36 +108,76 @@ func (d *Dn) Write(code int, data string, header ...map[string]string) {
 func (d *Dn) Json(data interface{}, code ...int) error {
 	var str []byte
 	var err error
-	switch reflect.TypeOf(data).Kind() {
-	case reflect.Slice, reflect.Array, reflect.Struct, reflect.Map:
-		str, err = json.Marshal(data)
-		if err != nil {
-			return err
+
+	// 检查response是否为nil
+	if d.response == nil {
+		return errors.New("response is nil")
+	}
+
+	// 尝试直接序列化数据
+	if str, err = json.Marshal(data); err != nil {
+		// 如果是字符串类型，直接使用
+		if s, ok := data.(string); ok {
+			str = []byte(s)
+		} else {
+			return errors.New("仅限可encode的数据和文本数据")
 		}
-		break
-	case reflect.String:
-		dStr := data.(string)
-		str = *(*[]byte)(unsafe.Pointer(&dStr))
-		break
-	default:
-		return errors.New("仅限可encode的数据和文本数据")
 	}
+
+	// 设置Content-Type，添加charset=utf-8
 	if (*d.response).Header().Get("Content-Type") == "" {
-		(*d.response).Header().Set("Content-Type", "application/json")
+		(*d.response).Header().Set("Content-Type", "application/json;charset=utf-8")
 	}
+
+	// 设置状态码
+	statusCode := http.StatusOK
 	if len(code) > 0 {
-		(*d.response).WriteHeader(code[0])
+		statusCode = code[0]
+		// 检查状态码是否有效
+		if statusCode < 100 || statusCode >= 600 {
+			statusCode = http.StatusOK
+		}
 	}
+	(*d.response).WriteHeader(statusCode)
+
+	// 输出数据
 	_, err = (*d.response).Write(str)
 	if err != nil {
+		d.Log.Error(err.Error())
 		return err
 	}
 	return nil
 }
 
+// SuccessJson 成功响应
+func (d *Dn) SuccessJson(data interface{}) error {
+	// 构建成功响应格式
+	successResp := map[string]interface{}{
+		"code":    200,
+		"msg":     "操作成功",
+		"success": true,
+		"data":    data,
+	}
+	return d.Json(successResp, 200)
+}
+
+// ErrorJson 错误响应
+func (d *Dn) ErrorJson(code int, message string) error {
+	// 构建错误响应格式
+	errorResp := map[string]interface{}{
+		"code":    code,
+		"msg":     message,
+		"success": false,
+	}
+	return d.Json(errorResp, code)
+}
+
 func (d *Dn) Data() map[string]string {
 	var m map[string]string
-	_ = json.Unmarshal(d.body, &m)
+	err := json.Unmarshal(d.body, &m)
+	if err != nil {
+		return make(map[string]string)
+	}
 	return m
 }
 
@@ -174,10 +192,83 @@ func (d *Dn) BodyFormat(format interface{}, errMsg ...string) {
 	}
 }
 
-func (d *Dn) OutByte() {
+// OutByte 输出二进制数据
+//
+// 参数：
+//   - data: 二进制数据
+//   - contentType: 内容类型，默认为application/octet-stream
+//   - code: HTTP状态码，默认为200
+//
+// 返回值：
+//   - error: 错误信息
+//
+// 功能：输出二进制数据到客户端
+func (d *Dn) OutByte(data []byte, contentType string, code ...int) error {
+	// 验证参数
+	if data == nil {
+		return errors.New("data cannot be nil")
+	}
 
+	// 设置Content-Type
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	(*d.response).Header().Set("Content-Type", contentType)
+
+	// 设置状态码
+	if len(code) > 0 {
+		(*d.response).WriteHeader(code[0])
+	} else {
+		(*d.response).WriteHeader(http.StatusOK)
+	}
+
+	// 输出数据
+	_, err := (*d.response).Write(data)
+	if err != nil {
+		d.Log.Error(err.Error())
+		return err
+	}
+
+	return nil
 }
 
-func (d *Dn) OutFile() {
+// OutFile 输出文件
+//
+// 参数：
+//   - fileData: 文件数据
+//   - filename: 文件名
+//   - code: HTTP状态码，默认为200
+//
+// 返回值：
+//   - error: 错误信息
+//
+// 功能：输出文件到客户端，设置Content-Disposition为attachment，提示用户下载
+func (d *Dn) OutFile(fileData []byte, filename string, code ...int) error {
+	// 验证参数
+	if fileData == nil {
+		return errors.New("file data cannot be nil")
+	}
 
+	// 设置Content-Type
+	(*d.response).Header().Set("Content-Type", "application/octet-stream")
+	// 设置Content-Disposition
+	if filename != "" {
+		(*d.response).Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+	}
+
+	// 设置状态码
+	if len(code) > 0 {
+		(*d.response).WriteHeader(code[0])
+	} else {
+		(*d.response).WriteHeader(http.StatusOK)
+	}
+
+	// 输出文件数据
+	_, err := (*d.response).Write(fileData)
+	if err != nil {
+		d.Log.Error(err.Error())
+		return err
+	}
+
+	return nil
 }

@@ -27,7 +27,7 @@ func (m Model) Find(fs ...yorm.FormatStruct) yorm.QueryResult {
 	m.s.Page(1, 1)
 	sql := query(m.s.GetStatement())
 	q := qfr{}
-	if m.s.GetStatement().Sql {
+	if m.s.GetStatement().SQL {
 		q.sql = sql
 	}
 	if m.s.GetStatement().Exec {
@@ -48,7 +48,7 @@ func (m Model) Find(fs ...yorm.FormatStruct) yorm.QueryResult {
 func (m Model) Select(fs ...yorm.FormatStruct) yorm.QueryResults {
 	sql := query(m.s.GetStatement())
 	q := qr{}
-	if m.s.GetStatement().Sql {
+	if m.s.GetStatement().SQL {
 		q.sql = sql
 	}
 	if m.s.GetStatement().Exec {
@@ -70,7 +70,7 @@ func (m Model) Select(fs ...yorm.FormatStruct) yorm.QueryResults {
 func (m Model) Update(i interface{}) yorm.ExecResult {
 	sql := update(m.s.GetStatement(), i)
 	u := er{}
-	if m.s.GetStatement().Sql {
+	if m.s.GetStatement().SQL {
 		u.sql = sql
 	}
 	if m.s.GetStatement().Exec {
@@ -86,7 +86,7 @@ func (m Model) Update(i interface{}) yorm.ExecResult {
 func (m Model) Insert(i interface{}) yorm.ExecResult {
 	sql := exec(m.s.GetStatement(), i)
 	e := er{}
-	if m.s.GetStatement().Sql {
+	if m.s.GetStatement().SQL {
 		e.sql = sql
 	}
 	if m.s.GetStatement().Exec {
@@ -102,7 +102,7 @@ func (m Model) Insert(i interface{}) yorm.ExecResult {
 func (m Model) Delete() yorm.ExecResult {
 	sql := remove(m.s.GetStatement())
 	e := er{}
-	if m.s.GetStatement().Sql {
+	if m.s.GetStatement().SQL {
 		e.sql = sql
 	}
 	if m.s.GetStatement().Exec {
@@ -115,14 +115,17 @@ func (m Model) Delete() yorm.ExecResult {
 	return e
 }
 
+// Transaction 开始事务
 func (m Model) Transaction() error {
-	return nil
+	return m.s.Db().Begin()
 }
 
+// Commit 提交事务
 func (m Model) Commit() error {
-	return nil
+	return m.s.Db().Commit()
 }
 
+// Rollback 回滚事务
 func (m Model) Rollback() error {
-	return nil
+	return m.s.Db().Rollback()
 }

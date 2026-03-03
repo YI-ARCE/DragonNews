@@ -2,80 +2,179 @@ package dhttp
 
 import (
 	"fmt"
+	"reflect"
+	"runtime"
+	"strings"
+	"sync"
 	"yiarce/core/frame"
+	"yiarce/core/monitor"
 )
 
-var manager map[string]*routerConstruct
+var (
+	manager     map[string]*routerConstruct
+	routerMutex sync.RWMutex
+)
 
 func init() {
 	manager = map[string]*routerConstruct{}
 }
 
-func routerCreate(path string, f func(r *Dn), noAuth ...bool) {
-	if len(noAuth) > 0 {
-		manager[path] = &routerConstruct{f: f, auth: false}
-	} else {
-		manager[path] = &routerConstruct{f: f, auth: true}
+// routerCreate 创建路由
+//
+// 参数：
+//   - path: 路由路径
+//   - f: 路由处理函数
+//   - noAuth: 是否需要权限检查
+func routerCreate(types string, f func(r *Dn), noAuth ...bool) {
+	if f == nil {
+		fmt.Println("[ERROR] 路由处理函数不能为空")
+		return
 	}
+
+	auth := true
+	if len(noAuth) > 0 && noAuth[0] {
+		auth = false
+	}
+
+	routerMutex.Lock()
+	defer routerMutex.Unlock()
+	path := getFuncPkg(f)
+	monitor.Debug(`router`, `register api -> [ `+types+` ]`, path)
+	path = path + `_` + types
+	manager[path] = &routerConstruct{f: f, auth: auth}
 }
 
-func Get(path string, f func(r *Dn), noAuth ...bool) {
-	routerCreate(path+"_GET", f, noAuth...)
+// Get 注册GET请求路由
+//
+// 参数：
+//   - path: 路由路径
+//   - f: 路由处理函数
+//   - auth: 是否需要权限检查，默认需要权限检查
+func Get(f func(r *Dn), auth ...bool) {
+
+	routerCreate(`GET`, f, auth...)
 }
 
-func Post(path string, f func(r *Dn), noAuth ...bool) {
-	routerCreate(path+"_POST", f, noAuth...)
+// Post 注册POST请求路由
+//
+// 参数：
+//   - path: 路由路径
+//   - f: 路由处理函数
+//   - auth: 是否需要权限检查，默认需要权限检查
+func Post(f func(r *Dn), auth ...bool) {
+	routerCreate(`POST`, f, auth...)
 }
 
-func Rule(path string, f func(r *Dn), noAuth ...bool) {
-	routerCreate(path, f, noAuth...)
+// Rule 注册无方法区分的路由
+//
+// 参数：
+//   - path: 路由路径
+//   - f: 路由处理函数
+//   - noAuth: 是否需要权限检查
+func Rule(f func(r *Dn), auth ...bool) {
+	routerCreate(``, f, auth...)
 }
 
+// execute 执行路由处理函数
+//
+// 参数：
+//   - r: Dn对象
 func execute(r *Dn) {
 	defer func() {
-		rs := recover()
-		if rs != nil {
-			if err, ok := rs.(frame.Error); ok {
-				if len(err.ApiCourse) > 0 {
-					for _, s := range err.ApiCourse {
-						fmt.Println(s)
-					}
+		if rs := recover(); rs != nil {
+			if frameErr, ok := rs.(frame.Error); ok {
+				// 记录错误信息
+				r.Log.Error(rs)
+				// 使用统一的错误响应格式
+				errorResp := map[string]interface{}{
+					"code":    frameErr.Code,
+					"msg":     frameErr.Message,
+					"success": false,
 				}
-				if len(err.FrameCurse) > 0 {
-					for _, s := range err.FrameCurse {
-						fmt.Println(s)
-					}
-				}
-				r.Write(200, `{"code":0,"msg":"`+err.Message+`"}`)
+				r.Json(errorResp, frameErr.Code)
 			} else {
+				// 处理非预期的错误
 				defer func() {
-					rs = recover()
-					err = rs.(frame.Error)
-					if len(err.ApiCourse) > 0 {
-						for _, s := range err.ApiCourse {
-							fmt.Println(s)
-						}
-					}
-					if len(err.FrameCurse) > 0 {
-						for _, s := range err.FrameCurse {
-							fmt.Println(s)
+					if rs := recover(); rs != nil {
+						if _, ok := rs.(frame.Error); ok {
+							// 记录错误信息
+							r.Log.Error(rs)
 						}
 					}
 				}()
-				frame.Errors(frame.HttpError, `http`, r, 2)
+				// 使用统一的错误响应格式
+				errorResp := map[string]interface{}{
+					"code":    500,
+					"msg":     "服务器内部错误",
+					"success": false,
+				}
+				r.Json(errorResp, 500)
 			}
 		}
 	}()
-	var rf *routerConstruct
-	if function, flag := manager[r.uri]; flag {
-		rf = function
-	} else if function, flag = manager[r.uri+"_"+r.method]; flag {
-		rf = function
-	} else {
-		r.Write(200, `403`)
+
+	// 检查请求对象是否为nil
+	if r == nil {
 		return
 	}
-	if inject(r, rf.auth) {
+
+	// 优化路由查找逻辑
+	var rf *routerConstruct
+	var ok bool
+
+	// 加读锁
+	routerMutex.RLock()
+	// 首先查找精确匹配的路由
+	if rf, ok = manager[r.uri]; ok {
+		// 路由存在
+	} else if rf, ok = manager[r.uri+"_"+r.method]; ok {
+		// 查找带HTTP方法后缀的路由
+	}
+
+	// 释放读锁
+	routerMutex.RUnlock()
+
+	if !ok {
+		// 路由不存在，返回404
+		notFoundResp := map[string]interface{}{
+			"code":    404,
+			"msg":     "路由不存在",
+			"success": false,
+		}
+		r.Json(notFoundResp)
+		return
+	}
+
+	// 检查路由处理函数是否为nil
+	if rf.f == nil {
+		errorResp := map[string]interface{}{
+			"code":    500,
+			"msg":     "路由处理函数未定义",
+			"success": false,
+		}
+		r.Json(errorResp, 500)
+		return
+	}
+
+	if injectFunc != nil && injectFunc(r, rf.auth) {
+		r.Db = dbs
 		rf.f(r)
 	}
+}
+
+func getFuncPkg(fn interface{}) string {
+	addr := reflect.ValueOf(fn).Pointer()
+	f := runtime.FuncForPC(addr)
+	arr := strings.Split(f.Name(), `.`)
+	funcName := arr[1]
+	arr = strings.Split(arr[0], `/`)
+	if arr[1] != `app` {
+		panic(`请使用app下的包函数注册为handle！`)
+	}
+	path := ``
+	arr = arr[2:]
+	for _, s := range arr {
+		path = path + `/` + s
+	}
+	return path[1:] + `/` + strings.ToLower(funcName[0:1]) + funcName[1:]
 }

@@ -1,4 +1,3 @@
 package cache
 
-type name struct {
-}
+// 缓存模型定义

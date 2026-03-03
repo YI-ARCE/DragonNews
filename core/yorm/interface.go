@@ -15,7 +15,7 @@ type ModelTransfer interface {
 	Limit(size int) ModelTransfer
 	Order(column string, sort string) ModelTransfer
 	Group(column string) ModelTransfer
-	FetchSql(flag ...bool) ModelTransfer
+	FetchSQL(flag ...bool) ModelTransfer
 	Find(fs ...FormatStruct) QueryResult
 	Select(fs ...FormatStruct) QueryResults
 	Insert(i interface{}) ExecResult
@@ -32,6 +32,7 @@ type ImplTransfer interface {
 }
 
 type Config struct {
+	Type      string `yaml:"type"`
 	Host      string `yaml:"host"`
 	Port      string `yaml:"port"`
 	Database  string `yaml:"database"`

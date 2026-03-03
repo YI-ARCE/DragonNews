@@ -6,5 +6,5 @@ import (
 )
 
 func Register() {
-	dhttp.Get(`index/hello`, index.Hello)
+	dhttp.Get(index.Hello)
 }
