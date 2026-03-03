@@ -1,0 +1,66 @@
+---------- [💻 127.0.0.1]-[📌 test/path]-[🔔 GET] ----------
+[ℹ️info][log_test.go(82)][2026-01-28 10:27:25]
+Info log test
+[⚠️warn][log_test.go(83)][2026-01-28 10:27:25]
+Warn log test
+[⚠️error][log_test.go(84)][2026-01-28 10:27:25]
+Error log test
+[💥fatal][log_test.go(85)][2026-01-28 10:27:25]
+Fatal log test
+[♻️success][log_test.go(86)][2026-01-28 10:27:25]
+Success log test
+[log_test.go(99)][ℹ️info][2026-01-28 10:27:25]
+Global info log test
+[log_test.go(100)][⚠️warn][2026-01-28 10:27:25]
+Global warn log test
+[log_test.go(101)][⚠️error][2026-01-28 10:27:25]
+Global error log test
+[log_test.go(102)][💥fatal][2026-01-28 10:27:25]
+Global fatal log test
+[log_test.go(103)][♻️success][2026-01-28 10:27:25]
+Global success log test
+---------- [💻 127.0.0.1]-[📌 test/path]-[🔔 GET] ----------
+[ℹ️info][log_test.go(82)][2026-01-28 10:51:34]
+Info log test
+[⚠️warn][log_test.go(83)][2026-01-28 10:51:34]
+Warn log test
+[⚠️error][log_test.go(84)][2026-01-28 10:51:34]
+Error log test
+[💥fatal][log_test.go(85)][2026-01-28 10:51:34]
+Fatal log test
+[♻️success][log_test.go(86)][2026-01-28 10:51:34]
+Success log test
+[log_test.go(99)][ℹ️info][2026-01-28 10:51:34]
+Global info log test
+[log_test.go(100)][⚠️warn][2026-01-28 10:51:34]
+Global warn log test
+[log_test.go(101)][⚠️error][2026-01-28 10:51:34]
+Global error log test
+[log_test.go(102)][💥fatal][2026-01-28 10:51:34]
+Global fatal log test
+[log_test.go(103)][♻️success][2026-01-28 10:51:34]
+Global success log test
+[log_test.go(104)][♾️default][2026-01-28 10:51:34]
+Global default log test
+---------- [💻 127.0.0.1]-[📌 test/path]-[🔔 GET] ----------
+[ℹ️info][log_test.go(82)][2026-01-28 11:52:06]
+Info log test
+[⚠️warn][log_test.go(83)][2026-01-28 11:52:06]
+Warn log test
+[⚠️error][log_test.go(84)][2026-01-28 11:52:06]
+Error log test
+[💥fatal][log_test.go(85)][2026-01-28 11:52:06]
+Fatal log test
+[♻️success][log_test.go(86)][2026-01-28 11:52:06]
+Success log test
+---------- [💻 127.0.0.1]-[📌 test/path]-[🔔 GET] ----------
+[ℹ️info][log_test.go(82)][2026-01-28 11:59:55]
+Info log test
+[⚠️warn][log_test.go(83)][2026-01-28 11:59:55]
+Warn log test
+[⚠️error][log_test.go(84)][2026-01-28 11:59:55]
+Error log test
+[💥fatal][log_test.go(85)][2026-01-28 11:59:55]
+Fatal log test
+[♻️success][log_test.go(86)][2026-01-28 11:59:55]
+Success log test
